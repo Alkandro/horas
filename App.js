@@ -1,20 +1,23 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+// App.js
+import React from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import RegistroHoras from './RegistroHoras';
+import RegistroPiezas from './RegistroPiezas';
+import CalculoDiario from './CalculoDiario';
+import Historial from './Historial'; // Importa el componente Historial
+
+const Tab = createBottomTabNavigator();
 
 export default function App() {
   return (
-    <View style={styles.container}>
-      <Text>Open up App.js to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
+    <NavigationContainer>
+      <Tab.Navigator>
+        <Tab.Screen name="Horas" component={RegistroHoras} />
+        <Tab.Screen name="Piezas" component={RegistroPiezas} />
+        <Tab.Screen name="Cálculo" component={CalculoDiario} />
+        <Tab.Screen name="Historial" component={Historial} />
+      </Tab.Navigator>
+    </NavigationContainer>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
