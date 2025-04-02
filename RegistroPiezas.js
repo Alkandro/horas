@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, TextInput, Button, Text } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { auth, firestore } from './firebaseConfig'; // Importa tus instancias de Firebase
 
 function RegistroPiezas() {
   const [valorNudo, setValorNudo] = useState('');
@@ -17,12 +18,24 @@ function RegistroPiezas() {
     setTotalDiario(total);
 
     try {
-      await AsyncStorage.setItem('totalPiezas', JSON.stringify(total));
-      console.log('Total de piezas guardado con éxito');
+      const userId = auth.currentUser?.uid;
+      if (userId) {
+        await firestore().collection('production').add({
+          userId: userId,
+          cantidad: parseFloat(cantidadPiezas) || 0,
+          nudos: parseFloat(cantidadNudosPorPieza) || 0,
+          tipoPieza: 'Tipo de Pieza Ejemplo', // Deberías tener un campo para esto
+          fecha: new Date().toISOString(),
+        });
+        console.log('Datos de producción enviados a Firestore');
+      } else {
+        console.warn('Usuario no autenticado.');
+      }
     } catch (error) {
-      console.error('Error al guardar total de piezas:', error);
+      console.error('Error al enviar datos de producción a Firestore:', error);
     }
   };
+  
 
   return (
     <View>
