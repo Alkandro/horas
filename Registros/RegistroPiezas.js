@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, TextInput, Button, Text } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { auth, firestore } from './firebaseConfig'; // Importa tus instancias de Firebase
+import { auth, firestore } from '../firebaseConfig'; // Importa tus instancias de Firebase
 
 function RegistroPiezas() {
   const [valorNudo, setValorNudo] = useState('');

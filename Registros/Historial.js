@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, Button, StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { auth } from './firebaseConfig'; // Importa auth
+import { auth } from '../firebaseConfig'; // Importa auth
 import { useNavigation } from '@react-navigation/native'; // Importa useNavigation
 
 function Historial() {

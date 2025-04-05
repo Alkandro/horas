@@ -1,12 +1,24 @@
 import React from 'react';
-import { View, Text, FlatList, StyleSheet } from 'react-native';
+import { View, Text, FlatList, StyleSheet, ScrollView } from 'react-native';
 
 const AdminUserDetailsScreen = ({ route }) => {
   const { user } = route.params;
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container}>
       <Text style={styles.title}>Detalles de {user.email}</Text>
+
+      {/* ✅ Detalles del usuario */}
+      <View style={styles.userInfo}>
+        <Text><Text style={styles.label}>Nombre:</Text> {user.nombre}</Text>
+        <Text><Text style={styles.label}>Apellido:</Text> {user.apellido}</Text>
+        <Text><Text style={styles.label}>Teléfono:</Text> {user.telefono}</Text>
+        <Text><Text style={styles.label}>Dirección:</Text> {user.direccion}</Text>
+      </View>
+
+      <Text style={styles.subtitle}>Producción</Text>
+
+      {/* ✅ Producción */}
       {user.productionData && user.productionData.length > 0 ? (
         <FlatList
           data={user.productionData}
@@ -23,25 +35,40 @@ const AdminUserDetailsScreen = ({ route }) => {
       ) : (
         <Text>No hay datos de producción para este usuario.</Text>
       )}
-    </View>
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
     padding: 16,
+    backgroundColor: '#fff',
   },
   title: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: 'bold',
-    marginBottom: 16,
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  userInfo: {
+    marginBottom: 20,
+    backgroundColor: '#f3f3f3',
+    padding: 15,
+    borderRadius: 8,
+  },
+  label: {
+    fontWeight: 'bold',
+  },
+  subtitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 10,
   },
   productionItem: {
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#eaeaea',
     padding: 12,
     marginBottom: 8,
-    borderRadius: 4,
+    borderRadius: 6,
   },
 });
 

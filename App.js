@@ -5,15 +5,16 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 
-import LoginScreen from './LoginScreen';
-import RegisterScreen from './RegisterScreen';
-import RegistroHoras from './RegistroHoras';
-import RegistroPiezas from './RegistroPiezas';
-import CalculoDiario from './CalculoDiario';
-import Historial from './Historial';
+import LoginScreen from './Login/LoginScreen';
+import RegisterScreen from './Login/RegisterScreen';
+// import RegistroHoras from './Registros/RegistroHoras';
+import RegistroPiezas from './Registros/RegistroPiezas';
+import CalculoDiario from './Registros/CalculoDiario';
+import Historial from './Registros/Historial';
 import AdminHomeScreen from './Amin/AdminHomeScreen';
 import AdminUserDetailsScreen from './Amin/AdminUserDetailsScreen';
 import AdminCreateUserScreen from './Amin/AdminCreateUserScreen';
+import UserProfileScreen from './UserProfileScreen';
 import { auth, firestore } from './firebaseConfig';
 
 const Stack = createNativeStackNavigator();
@@ -21,9 +22,10 @@ const Tab = createBottomTabNavigator();
 
 const UserTabNavigator = () => (
   <Tab.Navigator>
-    <Tab.Screen name="Horas" component={RegistroHoras} />
+    {/* <Tab.Screen name="Horas" component={RegistroHoras} /> */}
     <Tab.Screen name="Piezas" component={RegistroPiezas} />
     <Tab.Screen name="Cálculo" component={CalculoDiario} />
+    <Tab.Screen name="Perfil" component={UserProfileScreen} />
     <Tab.Screen name="Historial" component={Historial} />
   </Tab.Navigator>
 );

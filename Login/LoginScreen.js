@@ -1,42 +1,38 @@
 import React, { useState } from 'react';
 import { View, TextInput, Button, Text, StyleSheet, ActivityIndicator, SafeAreaView } from 'react-native';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
-import { auth, firestore } from './firebaseConfig';
+import { auth, firestore } from '../firebaseConfig';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 
-const RegisterScreen = ({ navigation }) => {
+const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleRegister = async () => {
+  const handleLogin = async () => {
     setLoading(true);
     setError('');
 
-    if (password !== confirmPassword) {
-      setError('Las contraseñas no coinciden.');
-      setLoading(false);
-      return;
-    }
-
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      const role = email === 'anne@a.com' ? 'admin' : 'user';
-      await setDoc(doc(firestore, 'users', user.uid), {
-        email,
-        role,
-      });
+      const userDocRef = doc(firestore, 'users', user.uid);
+      const userDocSnap = await getDoc(userDocRef);
 
-      console.log('Usuario registrado con rol:', role);
-      // ✅ NO navegamos manualmente — App.js lo hará con el rol
+      if (!userDocSnap.exists()) {
+        // Asignamos rol por defecto: si es anne@a.com => admin, si no => user
+        const role = email === 'anne@a.com' ? 'admin' : 'user';
+        await setDoc(userDocRef, { email: user.email, role });
+        console.log('Nuevo usuario creado en Firestore con rol:', role);
+      }
+
+      // No navegamos manualmente, App.js lo hace automáticamente según userRole
 
     } catch (e) {
-      setError(e.message || 'Error al crear la cuenta.');
-      console.error('Error de registro:', e);
+      setError(e.message || 'Error de autenticación. Credenciales incorrectas.');
+      console.error('Error de login:', e);
     } finally {
       setLoading(false);
     }
@@ -45,7 +41,7 @@ const RegisterScreen = ({ navigation }) => {
   return (
     <SafeAreaView style={{ flex: 1 }}>
       <View style={styles.container}>
-        <Text style={styles.title}>Crear Cuenta</Text>
+        <Text style={styles.title}>Iniciar Sesión</Text>
         <TextInput
           style={styles.input}
           placeholder="Correo Electrónico"
@@ -61,26 +57,20 @@ const RegisterScreen = ({ navigation }) => {
           value={password}
           onChangeText={setPassword}
         />
-        <TextInput
-          style={styles.input}
-          placeholder="Confirmar Contraseña"
-          secureTextEntry
-          value={confirmPassword}
-          onChangeText={setConfirmPassword}
-        />
         {error ? <Text style={styles.error}>{error}</Text> : null}
-        <Button title="Crear Cuenta" onPress={handleRegister} disabled={loading} />
+        <Button title="Iniciar Sesión" onPress={handleLogin} disabled={loading} />
         {loading && <ActivityIndicator style={styles.loading} />}
         <View style={{ marginTop: 20 }}>
           <Button
-            title="¿Ya tienes una cuenta? Iniciar Sesión"
-            onPress={() => navigation.goBack()}
+            title="¿No tienes una cuenta? Crear una"
+            onPress={() => navigation.navigate('Register')}
           />
         </View>
       </View>
     </SafeAreaView>
   );
-};
+  
+}
 
 const styles = StyleSheet.create({
   container: { flex: 1, justifyContent: 'center', padding: 20, backgroundColor: '#f5f5f5' },
@@ -90,4 +80,4 @@ const styles = StyleSheet.create({
   loading: { marginTop: 15 },
 });
 
-export default RegisterScreen;
+export default LoginScreen;
