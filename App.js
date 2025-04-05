@@ -7,15 +7,13 @@ import { doc, getDoc } from 'firebase/firestore';
 
 import LoginScreen from './Login/LoginScreen';
 import RegisterScreen from './Login/RegisterScreen';
-// import RegistroHoras from './Registros/RegistroHoras';
-import RegistroPiezas from './Registros/RegistroPiezas';
-import CalculoDiario from './Registros/CalculoDiario';
 import Historial from './Registros/Historial';
 import AdminHomeScreen from './Amin/AdminHomeScreen';
 import AdminUserDetailsScreen from './Amin/AdminUserDetailsScreen';
 import AdminCreateUserScreen from './Amin/AdminCreateUserScreen';
 import UserProfileScreen from './Registros/UserProfileScreen';
 import EditarPerfilScreen from './Registros/EditarPerfilScreen';
+import RegistroYCalculoDiario from './Registros/RegistroYCalculoDiario';
 import { auth, firestore } from './firebaseConfig';
 
 const Stack = createNativeStackNavigator();
@@ -23,12 +21,9 @@ const Tab = createBottomTabNavigator();
 
 const UserTabNavigator = () => (
   <Tab.Navigator>
-    {/* <Tab.Screen name="Horas" component={RegistroHoras} /> */}
-    <Tab.Screen name="Piezas" component={RegistroPiezas} />
-    <Tab.Screen name="Cálculo" component={CalculoDiario} />
+    <Tab.Screen name="Producción" component={RegistroYCalculoDiario} />
     <Tab.Screen name="Perfil" component={UserProfileScreen} />
     <Tab.Screen name="Historial" component={Historial} />
-
   </Tab.Navigator>
 );
 
