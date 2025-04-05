@@ -10,11 +10,17 @@ const AdminUserDetailsScreen = ({ route }) => {
 
       {/* ✅ Detalles del usuario */}
       <View style={styles.userInfo}>
-        <Text><Text style={styles.label}>Nombre:</Text> {user.nombre}</Text>
-        <Text><Text style={styles.label}>Apellido:</Text> {user.apellido}</Text>
-        <Text><Text style={styles.label}>Teléfono:</Text> {user.telefono}</Text>
-        <Text><Text style={styles.label}>Dirección:</Text> {user.direccion}</Text>
-      </View>
+  <Text><Text style={styles.label}>Nombre:</Text> {user.nombre}</Text>
+  <Text><Text style={styles.label}>Apellido:</Text> {user.apellido}</Text>
+  <Text><Text style={styles.label}>Teléfono:</Text> {user.telefono}</Text>
+
+  <Text style={styles.label}>Dirección:</Text>
+  <Text>
+    {`${user.direccion?.prefectura || ''}, ${user.direccion?.ciudad || ''}, ${user.direccion?.barrio || ''}, ${user.direccion?.numero || ''}`}
+  </Text>
+  <Text style={styles.label}>Código Postal:</Text>
+  <Text>{user.direccion?.codigoPostal || 'No disponible'}</Text>
+</View>
 
       <Text style={styles.subtitle}>Producción</Text>
 

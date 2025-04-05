@@ -7,21 +7,52 @@ import {
   StyleSheet,
   ActivityIndicator,
   SafeAreaView,
+  Alert,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import { auth, firestore } from "../firebaseConfig";
+import axios from "axios";
 
 const RegisterScreen = ({ navigation }) => {
   const [nombre, setNombre] = useState("");
   const [apellido, setApellido] = useState("");
   const [telefono, setTelefono] = useState("");
-  const [direccion, setDireccion] = useState("");
+  const [codigoPostal, setCodigoPostal] = useState("");
+  const [prefectura, setPrefectura] = useState("");
+  const [ciudad, setCiudad] = useState("");
+  const [barrio, setBarrio] = useState("");
+  const [numero, setNumero] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [cargandoDireccion, setCargandoDireccion] = useState(false);
+
+  const handleAutoCompletarDireccion = async () => {
+    setCargandoDireccion(true);
+    try {
+      const response = await axios.get(`https://zipcloud.ibsnet.co.jp/api/search?zipcode=${codigoPostal}`);
+      const data = response.data;
+      if (data.results && data.results.length > 0) {
+        const d = data.results[0];
+        setPrefectura(d.address1);
+        setCiudad(d.address2);
+        setBarrio(d.address3);
+      } else {
+        Alert.alert("Aviso", "No se encontró dirección para ese código postal.");
+      }
+    } catch (error) {
+      console.error("Error buscando dirección:", error);
+      Alert.alert("Error", "No se pudo obtener la dirección.");
+    } finally {
+      setCargandoDireccion(false);
+    }
+  };
 
   const handleRegister = async () => {
     setLoading(true);
@@ -34,11 +65,7 @@ const RegisterScreen = ({ navigation }) => {
     }
 
     try {
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        email,
-        password
-      );
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
       const role = email === "anne@a.com" ? "admin" : "user";
@@ -48,11 +75,16 @@ const RegisterScreen = ({ navigation }) => {
         nombre,
         apellido,
         telefono,
-        direccion,
+        direccion: {
+          prefectura,
+          ciudad,
+          barrio,
+          numero,
+          codigoPostal,
+        },
       });
 
       console.log("Usuario registrado con rol:", role);
-      // ✅ NO navegamos manualmente — App.js lo hará con el rol
     } catch (e) {
       setError(e.message || "Error al crear la cuenta.");
       console.error("Error de registro:", e);
@@ -63,79 +95,86 @@ const RegisterScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
-      <View style={styles.container}>
-        <Text style={styles.title}>Crear Cuenta</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Nombre"
-          value={nombre}
-          onChangeText={setNombre}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Apellido"
-          value={apellido}
-          onChangeText={setApellido}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Teléfono"
-          value={telefono}
-          onChangeText={setTelefono}
-          keyboardType="phone-pad"
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Dirección"
-          value={direccion}
-          onChangeText={setDireccion}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Correo Electrónico"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Contraseña"
-          secureTextEntry
-          value={password}
-          onChangeText={setPassword}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Confirmar Contraseña"
-          secureTextEntry
-          value={confirmPassword}
-          onChangeText={setConfirmPassword}
-        />
-        {error ? <Text style={styles.error}>{error}</Text> : null}
-        <Button
-          title="Crear Cuenta"
-          onPress={handleRegister}
-          disabled={loading}
-        />
-        {loading && <ActivityIndicator style={styles.loading} />}
-        <View style={{ marginTop: 20 }}>
-          <Button
-            title="¿Ya tienes una cuenta? Iniciar Sesión"
-            onPress={() => navigation.goBack()}
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={80}
+      >
+        <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+          <Text style={styles.title}>Crear Cuenta</Text>
+
+          <TextInput style={styles.input} placeholder="Nombre" value={nombre} onChangeText={setNombre} />
+          <TextInput style={styles.input} placeholder="Apellido" value={apellido} onChangeText={setApellido} />
+          <TextInput
+            style={styles.input}
+            placeholder="Teléfono"
+            value={telefono}
+            onChangeText={setTelefono}
+            keyboardType="phone-pad"
           />
-        </View>
-      </View>
+          <TextInput
+            style={styles.input}
+            placeholder="Correo Electrónico"
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+          />
+
+          <TextInput
+            style={styles.input}
+            placeholder="Código Postal"
+            value={codigoPostal}
+            onChangeText={setCodigoPostal}
+            keyboardType="numeric"
+          />
+          <Button title="Autocompletar Dirección" onPress={handleAutoCompletarDireccion} />
+          {cargandoDireccion && <ActivityIndicator size="small" style={{ marginVertical: 10 }} />}
+
+          <TextInput style={styles.input} placeholder="Prefectura" value={prefectura} onChangeText={setPrefectura} />
+          <TextInput style={styles.input} placeholder="Ciudad" value={ciudad} onChangeText={setCiudad} />
+          <TextInput style={styles.input} placeholder="Barrio" value={barrio} onChangeText={setBarrio} />
+          <TextInput
+            style={styles.input}
+            placeholder="Ej. 1-1-1"
+            value={numero}
+            onChangeText={setNumero}
+          />
+
+          <TextInput
+            style={styles.input}
+            placeholder="Contraseña"
+            secureTextEntry
+            value={password}
+            onChangeText={setPassword}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Confirmar Contraseña"
+            secureTextEntry
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+          />
+
+          {error ? <Text style={styles.error}>{error}</Text> : null}
+
+          <Button title="Crear Cuenta" onPress={handleRegister} disabled={loading} />
+          {loading && <ActivityIndicator style={styles.loading} />}
+
+          <View style={{ marginTop: 20 }}>
+            <Button title="¿Ya tienes una cuenta? Iniciar Sesión" onPress={() => navigation.goBack()} />
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    justifyContent: "center",
     padding: 20,
     backgroundColor: "#f5f5f5",
+    flexGrow: 1,
   },
   title: {
     fontSize: 24,
@@ -152,8 +191,14 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     backgroundColor: "white",
   },
-  error: { color: "red", marginBottom: 10, textAlign: "center" },
-  loading: { marginTop: 15 },
+  error: {
+    color: "red",
+    marginBottom: 10,
+    textAlign: "center",
+  },
+  loading: {
+    marginTop: 15,
+  },
 });
 
 export default RegisterScreen;

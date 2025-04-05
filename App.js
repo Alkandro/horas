@@ -14,7 +14,8 @@ import Historial from './Registros/Historial';
 import AdminHomeScreen from './Amin/AdminHomeScreen';
 import AdminUserDetailsScreen from './Amin/AdminUserDetailsScreen';
 import AdminCreateUserScreen from './Amin/AdminCreateUserScreen';
-import UserProfileScreen from './UserProfileScreen';
+import UserProfileScreen from './Registros/UserProfileScreen';
+import EditarPerfilScreen from './Registros/EditarPerfilScreen';
 import { auth, firestore } from './firebaseConfig';
 
 const Stack = createNativeStackNavigator();
@@ -27,6 +28,7 @@ const UserTabNavigator = () => (
     <Tab.Screen name="Cálculo" component={CalculoDiario} />
     <Tab.Screen name="Perfil" component={UserProfileScreen} />
     <Tab.Screen name="Historial" component={Historial} />
+
   </Tab.Navigator>
 );
 
@@ -83,6 +85,7 @@ const App = () => {
         ) : (
           <>
             <Stack.Screen name="UserHome" component={UserTabNavigator} />
+            <Stack.Screen name="EditarPerfil" component={EditarPerfilScreen} options={{ title: 'Editar Perfil' }} />
           </>
         )}
       </Stack.Navigator>
