@@ -1,151 +1,218 @@
-// Registros/RegistroYCalculoDiario.js
-
-import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, Alert } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  Button,
+  StyleSheet,
+  ScrollView,
+  RefreshControl,
+  Alert,
+} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { auth, firestore } from '../firebaseConfig';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, getDocs, addDoc } from 'firebase/firestore';
 import { Picker } from '@react-native-picker/picker';
 
 const RegistroYCalculoDiario = () => {
-  const [valorNudo, setValorNudo] = useState('');
-  const [cantidadNudosPorPieza, setCantidadNudosPorPieza] = useState('');
   const [cantidadPiezas, setCantidadPiezas] = useState('');
-  const [tipoPieza, setTipoPieza] = useState('Ejemplo A');
-  const [totalPiezas, setTotalPiezas] = useState(0);
-  const [horasTrabajadas, setHorasTrabajadas] = useState(0);
+  const [totalDiario, setTotalDiario] = useState(0);
+  const [articulos, setArticulos] = useState([]);
+  const [tipoPieza, setTipoPieza] = useState('');
+  const [valorNudo, setValorNudo] = useState(0);
+  const [cantidadNudosPorPieza, setCantidadNudosPorPieza] = useState(0);
+  const [detalles, setDetalles] = useState([]);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const tarifaPorHora = 10;
-  const pagoTotal = horasTrabajadas * tarifaPorHora + totalPiezas;
-
-  useEffect(() => {
-    const obtenerDatos = async () => {
-      try {
-        const horas = await AsyncStorage.getItem('horasTrabajadas');
-        if (horas !== null) {
-          setHorasTrabajadas(parseFloat(horas));
-        }
-      } catch (error) {
-        console.error('Error al obtener horas:', error);
-      }
-    };
-
-    obtenerDatos();
-  }, []);
-
-  const calcularYRegistrar = async () => {
-    const valorNudoNum = parseFloat(valorNudo) || 0;
-    const cantidadNudosNum = parseFloat(cantidadNudosPorPieza) || 0;
-    const cantidadPiezasNum = parseFloat(cantidadPiezas) || 0;
-
-    const total = valorNudoNum * cantidadNudosNum * cantidadPiezasNum;
-    setTotalPiezas(total);
-    await AsyncStorage.setItem('totalPiezas', JSON.stringify(total));
-
+  const cargarArticulos = async () => {
     try {
-      const userId = auth.currentUser?.uid;
-      if (userId) {
-        await addDoc(collection(firestore, 'production'), {
-          userId,
-          cantidad: cantidadPiezasNum,
-          nudos: cantidadNudosNum,
-          tipoPieza,
-          fecha: new Date().toISOString(),
-        });
-        Alert.alert('Éxito', 'Producción registrada correctamente');
-      } else {
-        Alert.alert('Atención', 'Usuario no autenticado');
-      }
+      const snapshot = await getDocs(collection(firestore, 'articulos'));
+      const lista = snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          nombre: data.nombre,
+          valorNudo: parseFloat(data.valorNudo || 0),
+          nudos: parseFloat(data.nudos || 0),
+        };
+      });
+      setArticulos(lista);
     } catch (error) {
-      console.error('Error al enviar datos a Firestore:', error);
-      Alert.alert('Error', 'No se pudo registrar la producción.');
+      console.error('Error al cargar artículos:', error);
     }
   };
 
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Registro y Cálculo Diario</Text>
+  useEffect(() => {
+    cargarArticulos();
+  }, []);
 
-      <Text style={styles.label}>Tipo de Pieza</Text>
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    cargarArticulos().then(() => setRefreshing(false));
+  }, []);
+
+  const handleSeleccionArticulo = (nombre) => {
+    setTipoPieza(nombre);
+    const articulo = articulos.find(a => a.nombre === nombre);
+  
+    if (articulo) {
+      setValorNudo(articulo.valorNudo ?? 0);
+      setCantidadNudosPorPieza(articulo.nudos ?? 0);
+    } else {
+      console.warn('Artículo no encontrado:', nombre);
+      setValorNudo(0);
+      setCantidadNudosPorPieza(0);
+    }
+  };
+  
+
+  const agregarAlTotal = () => {
+    const piezas = parseFloat(cantidadPiezas);
+    if (!tipoPieza || isNaN(piezas) || piezas <= 0) {
+      Alert.alert('Aviso', 'Por favor seleccione un artículo y cantidad válida.');
+      return;
+    }
+
+    const subtotal = valorNudo * cantidadNudosPorPieza * piezas;
+    const nuevoDetalle = {
+      tipoPieza,
+      piezas,
+      nudos: cantidadNudosPorPieza,
+      valorNudo: valorNudo, 
+      subtotal,
+    };
+    
+
+    setDetalles(prev => [...prev, nuevoDetalle]);
+    setTotalDiario(prev => prev + subtotal);
+    setCantidadPiezas('');
+  };
+
+  const guardarEnFirestore = async () => {
+    try {
+      const userId = auth.currentUser?.uid;
+      if (!userId || detalles.length === 0) return;
+  
+      // Verifica que todos los detalles tengan los datos necesarios
+      const datosIncompletos = detalles.some((detalle) =>
+        !detalle.tipoPieza || detalle.piezas == null || detalle.nudos == null || detalle.valorNudo == null
+      );
+  
+      if (datosIncompletos) {
+        Alert.alert('Error', 'Uno o más artículos tienen datos incompletos. Verifica antes de guardar');
+        return;
+      }
+  
+      for (const detalle of detalles) {
+        await addDoc(collection(firestore, 'production'), {
+          userId,
+          cantidad: detalle.piezas,
+          nudos: detalle.nudos,
+          tipoPieza: detalle.tipoPieza,
+          valorNudo: detalle.valorNudo, // <--- Esto no debe ser undefined
+          fecha: new Date().toISOString(),
+        });
+      }
+  
+      await AsyncStorage.setItem('totalPiezas', JSON.stringify(totalDiario));
+      Alert.alert('Éxito', 'Datos guardados correctamente');
+      setDetalles([]);
+      setTotalDiario(0);
+    } catch (error) {
+      console.error('Error al guardar en Firestore:', error);
+      Alert.alert('Error', 'No se pudo guardar en Firestore');
+    }
+  };
+  
+  
+  
+  
+
+  return (
+    <ScrollView
+      contentContainerStyle={styles.container}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      keyboardShouldPersistTaps="handled"
+    >
       <Picker
         selectedValue={tipoPieza}
-        onValueChange={(itemValue) => setTipoPieza(itemValue)}
+        onValueChange={handleSeleccionArticulo}
         style={styles.picker}
       >
-        <Picker.Item label="Ejemplo A" value="Ejemplo A" />
-        <Picker.Item label="Ejemplo B" value="Ejemplo B" />
-        <Picker.Item label="Ejemplo C" value="Ejemplo C" />
+        <Picker.Item label="Seleccione un artículo" value="" />
+        {articulos.map((articulo) => (
+          <Picker.Item key={articulo.id} label={articulo.nombre} value={articulo.nombre} />
+        ))}
       </Picker>
 
+      {tipoPieza ? (
+        <View style={{ marginBottom: 15 }}>
+          <Text style={styles.boldText}>Valor por nudo: ¥{valorNudo}</Text>
+          <Text style={styles.boldText}>Nudos por pieza: {cantidadNudosPorPieza}</Text>
+        </View>
+      ) : null}
+
       <TextInput
-        style={styles.input}
-        placeholder="Valor por nudo"
-        keyboardType="numeric"
-        onChangeText={setValorNudo}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Cantidad de nudos por pieza"
-        keyboardType="numeric"
-        onChangeText={setCantidadNudosPorPieza}
-      />
-      <TextInput
-        style={styles.input}
         placeholder="Cantidad de piezas"
         keyboardType="numeric"
         onChangeText={setCantidadPiezas}
+        value={cantidadPiezas}
+        style={styles.input}
       />
 
-      <Button title="Calcular y Registrar Producción" onPress={calcularYRegistrar} />
+      <Button title="Agregar" onPress={agregarAlTotal} />
 
-      <View style={styles.resultBox}>
-        <Text style={styles.result}>Horas trabajadas: {horasTrabajadas}</Text>
-        <Text style={styles.result}>Total por piezas: {totalPiezas}</Text>
-        <Text style={styles.resultBold}>Pago total estimado: {pagoTotal}</Text>
+      <View style={{ marginVertical: 20 }}>
+        <Text style={styles.subtitle}>Resumen del día:</Text>
+        {detalles.map((item, index) => (
+          <Text key={index} style={styles.item}>
+            {item.tipoPieza} - {item.piezas} piezas - Subtotal: ¥{item.subtotal.toFixed(0)}
+          </Text>
+        ))}
       </View>
-    </View>
+
+      <Text style={styles.result}>
+        Total diario: <Text style={styles.boldText}>¥{totalDiario.toFixed(0)}</Text>
+      </Text>
+
+      <Button title="Guardar y Enviar" onPress={guardarEnFirestore} />
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     padding: 20,
-    flex: 1,
     backgroundColor: '#fff',
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 20,
-  },
-  label: {
-    fontWeight: 'bold',
-    marginBottom: 5,
+    flexGrow: 1,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: '#999',
     padding: 10,
     marginBottom: 12,
     borderRadius: 5,
-    backgroundColor: '#f9f9f9',
   },
   picker: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    marginBottom: 15,
+    marginBottom: 20,
   },
-  resultBox: {
-    marginTop: 20,
+  subtitle: {
+    fontWeight: 'bold',
+    fontSize: 17,
+    marginBottom: 8,
   },
   result: {
-    fontSize: 16,
-    marginBottom: 5,
-  },
-  resultBold: {
     fontSize: 18,
-    fontWeight: 'bold',
     marginTop: 10,
+    marginBottom: 15,
+  },
+  boldText: {
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  item: {
+    fontSize: 15,
+    marginBottom: 4,
   },
 });
 

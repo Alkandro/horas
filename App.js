@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 
@@ -14,6 +15,8 @@ import AdminCreateUserScreen from './Amin/AdminCreateUserScreen';
 import UserProfileScreen from './Registros/UserProfileScreen';
 import EditarPerfilScreen from './Registros/EditarPerfilScreen';
 import RegistroYCalculoDiario from './Registros/RegistroYCalculoDiario';
+import AdminTabsNavigator from './Amin/AdminTabsNavigator';
+import EditarRegistroScreen from './Registros/EditarRegistroScreen';
 import { auth, firestore } from './firebaseConfig';
 
 const Stack = createNativeStackNavigator();
@@ -29,10 +32,9 @@ const UserTabNavigator = () => (
 
 const AdminStackNavigator = () => (
   <Stack.Navigator>
-    <Stack.Screen name="AdminHome" component={AdminHomeScreen} options={{ headerShown: false }} />
-    <Stack.Screen name="AdminUserDetails" component={AdminUserDetailsScreen} options={{ title: 'Detalles del Usuario' }} />
-    <Stack.Screen name="AdminCreateUser" component={AdminCreateUserScreen} options={{ title: 'Crear Usuario' }} />
-  </Stack.Navigator>
+  <Stack.Screen name="AdminTabs" component={AdminTabsNavigator} options={{ headerShown: false }} />
+  <Stack.Screen name="AdminUserDetails" component={AdminUserDetailsScreen} options={{ title: 'Detalles del Usuario' }} />
+</Stack.Navigator>
 );
 
 const App = () => {
@@ -66,6 +68,7 @@ const App = () => {
   if (loadingInitialAuth) return null;
 
   return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {!user ? (
@@ -81,10 +84,12 @@ const App = () => {
           <>
             <Stack.Screen name="UserHome" component={UserTabNavigator} />
             <Stack.Screen name="EditarPerfil" component={EditarPerfilScreen} options={{ title: 'Editar Perfil' }} />
+            <Stack.Screen name="EditarRegistro" component={EditarRegistroScreen} options={{ title: 'Editar Registro' }} />
           </>
         )}
       </Stack.Navigator>
     </NavigationContainer>
+    </GestureHandlerRootView>
   );
 }
 
