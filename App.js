@@ -17,6 +17,7 @@ import EditarPerfilScreen from './Registros/EditarPerfilScreen';
 import RegistroYCalculoDiario from './Registros/RegistroYCalculoDiario';
 import AdminTabsNavigator from './Amin/AdminTabsNavigator';
 import EditarRegistroScreen from './Registros/EditarRegistroScreen';
+import Toast from 'react-native-toast-message';
 import { auth, firestore } from './firebaseConfig';
 
 const Stack = createNativeStackNavigator();
@@ -88,6 +89,7 @@ const App = () => {
           </>
         )}
       </Stack.Navigator>
+      <Toast />
     </NavigationContainer>
     </GestureHandlerRootView>
   );

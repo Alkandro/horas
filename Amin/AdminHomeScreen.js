@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, Button,SafeAreaView } from 'react-native';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, Button,SafeAreaView,Alert } from 'react-native';
+import { collection, getDocs, query, where, doc, deleteDoc } from 'firebase/firestore';
 import { useFocusEffect } from '@react-navigation/native';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 import { firestore, auth } from '../firebaseConfig';
 
 const AdminHomeScreen = ({ navigation }) => {
@@ -80,6 +81,40 @@ const AdminHomeScreen = ({ navigation }) => {
   if (error) {
     return <View><Text>Error: {error}</Text></View>;
   }
+  const confirmarEliminacionUsuario = (userId) => {
+    Alert.alert(
+      'Confirmar eliminación',
+      '¿Estás seguro de que quieres eliminar este usuario?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Eliminar',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteDoc(doc(firestore, 'users', userId));
+              fetchUsersData(true); // Refrescar lista
+            } catch (error) {
+              console.error('Error al eliminar usuario:', error);
+              Alert.alert('Error', 'No se pudo eliminar el usuario.');
+            }
+          },
+        },
+      ]
+    );
+  };
+  
+  const eliminarUsuario = async (userId) => {
+    try {
+      await deleteDoc(doc(firestore, 'users', userId));
+      setUsersData(usersData.filter(u => u.userId !== userId));
+      Alert.alert('Usuario eliminado');
+    } catch (error) {
+      console.error('Error al eliminar usuario:', error);
+      Alert.alert('Error', 'No se pudo eliminar el usuario');
+    }
+  };
+  
 
   return (
     <View style={styles.container}>
@@ -89,9 +124,19 @@ const AdminHomeScreen = ({ navigation }) => {
   keyExtractor={(item) => item.userId}
   renderItem={({ item }) => (
     <TouchableOpacity onPress={() => handleUserPress(item)} style={styles.userCard}>
-      <Text style={styles.userName}>Usuario: {item.email}</Text>
-      <Text>Piezas Hechas: {item.productionData?.reduce((sum, prod) => sum + prod.cantidad, 0)}</Text>
-      <Text>Nudos Totales: {item.productionData?.reduce((sum, prod) => sum + prod.nudos, 0)}</Text>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.userName}>{item.nombre} {item.apellido}</Text>
+          <Text>Teléfono: {item.telefono || 'No disponible'}</Text>
+          <Text style={styles.userName}>Usuario: {item.email}</Text>
+        </View>
+        <TouchableOpacity
+          onPress={() => confirmarEliminacionUsuario(item.userId)}
+          style={styles.iconContainer}
+        >
+          <Icon name="delete" size={20} color="#d32f2f" />
+        </TouchableOpacity>
+      </View>
     </TouchableOpacity>
   )}
   refreshing={refreshing}
@@ -124,6 +169,11 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     borderWidth: 1,
     borderColor: '#ddd',
+  },
+  iconContainer: {
+    paddingLeft: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   userName: {
     fontWeight: 'bold',

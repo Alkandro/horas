@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { View, TextInput, Button, Text, StyleSheet, ActivityIndicator, SafeAreaView } from 'react-native';
+import { View, TextInput, Button, Text, StyleSheet,Alert, ActivityIndicator, SafeAreaView } from 'react-native';
 import { auth, firestore } from '../firebaseConfig';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
+import Toast from 'react-native-toast-message';
 
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
@@ -13,30 +14,42 @@ const LoginScreen = ({ navigation }) => {
   const handleLogin = async () => {
     setLoading(true);
     setError('');
-
+  
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
-
+    
       const userDocRef = doc(firestore, 'users', user.uid);
       const userDocSnap = await getDoc(userDocRef);
-
+    
       if (!userDocSnap.exists()) {
-        // Asignamos rol por defecto: si es anne@a.com => admin, si no => user
         const role = email === 'anne@a.com' ? 'admin' : 'user';
         await setDoc(userDocRef, { email: user.email, role });
         console.log('Nuevo usuario creado en Firestore con rol:', role);
       }
-
-      // No navegamos manualmente, App.js lo hace automáticamente según userRole
-
+    
     } catch (e) {
-      setError(e.message || 'Error de autenticación. Credenciales incorrectas.');
-      console.error('Error de login:', e);
-    } finally {
-      setLoading(false);
+      let mensaje = 'Ocurrió un error inesperado. Intenta nuevamente.';
+    
+      if (e.code === 'auth/invalid-credential') {
+        mensaje = 'Correo o contraseña inválidos, o tu cuenta ha sido deshabilitada.';
+      } else if (e.code === 'auth/user-disabled') {
+        mensaje = 'Tu cuenta ha sido deshabilitada por un administrador.';
+      } else if (e.code === 'auth/user-not-found') {
+        mensaje = 'Usuario no encontrado.';
+      }
+    
+      Toast.show({
+        type: 'error',
+        text1: 'Error de inicio de sesión',
+        text2: mensaje,
+        position: 'top',
+      });
     }
+    
+    
   };
+  
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
