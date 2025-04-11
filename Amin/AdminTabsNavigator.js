@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 const Tab = createBottomTabNavigator();
 
+
 const AdminTabsNavigator = () => {
   return (
     <Tab.Navigator
@@ -20,6 +21,7 @@ const AdminTabsNavigator = () => {
             iconName = 'add-circle';
           } else if (route.name === 'Ver Artículos') {
             iconName = 'cube';
+         
           }
           return <Ionicons name={iconName} size={size} color={color} />;
         },
@@ -29,6 +31,7 @@ const AdminTabsNavigator = () => {
       <Tab.Screen name="Usuarios" component={AdminHomeScreen} />
       <Tab.Screen name="Crear Artículo" component={AdminCrearArticuloScreen} />
       <Tab.Screen name="Ver Artículos" component={AdminArticulosScreen} />
+      
     </Tab.Navigator>
   );
 };

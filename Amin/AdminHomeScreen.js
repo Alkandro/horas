@@ -24,7 +24,10 @@ const AdminHomeScreen = ({ navigation }) => {
       const snapshot = await getDocs(usersCollection);
   
       const usersList = await Promise.all(
-        snapshot.docs.map(async (docSnap) => {
+        snapshot.docs
+          .filter((docSnap) => docSnap.data().role !== 'admin') // ⛔ excluir admin
+          .map(async (docSnap) => {
+      
           const userData = docSnap.data();
           const userId = docSnap.id;
   
