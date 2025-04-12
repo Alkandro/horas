@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import DropDownPicker from 'react-native-dropdown-picker';
 import { firestore } from '../firebaseConfig';
-import { doc, getDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 import dayjs from 'dayjs';
 
 const AdminUserMonthlySummaryScreen = ({ route }) => {
@@ -26,11 +26,17 @@ const AdminUserMonthlySummaryScreen = ({ route }) => {
   useEffect(() => {
     const fetchResumen = async () => {
       try {
-        const resumenId = `${userId}_${añoSeleccionado}_${mesSeleccionado}`;
-        const docRef = doc(firestore, 'resumenMensual', resumenId);
-        const snapshot = await getDoc(docRef);
-        if (snapshot.exists()) {
-          setResumenMensual(snapshot.data());
+        const q = query(
+          collection(firestore, 'resumenMensual'),
+          where('userId', '==', userId),
+          where('año', '==', añoSeleccionado),
+          where('mes', '==', mesSeleccionado)
+        );
+
+        const snapshot = await getDocs(q);
+        if (!snapshot.empty) {
+          const data = snapshot.docs[0].data();
+          setResumenMensual(data);
         } else {
           setResumenMensual(null);
         }
@@ -40,7 +46,7 @@ const AdminUserMonthlySummaryScreen = ({ route }) => {
     };
 
     fetchResumen();
-  }, [mesSeleccionado, añoSeleccionado]);
+  }, [mesSeleccionado, añoSeleccionado, userId]);
 
   return (
     <View style={styles.container}>

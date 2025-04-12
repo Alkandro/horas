@@ -1,30 +1,33 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, FlatList, StyleSheet } from 'react-native';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { firestore, auth } from '../firebaseConfig';
+import { useFocusEffect } from '@react-navigation/native';
 
 const ResumenMensual = () => {
   const [resumenes, setResumenes] = useState([]);
 
-  useEffect(() => {
-    const cargarResumenes = async () => {
-      const userId = auth.currentUser?.uid;
-      if (!userId) return;
+  const cargarResumenes = async () => {
+    const userId = auth.currentUser?.uid;
+    if (!userId) return;
 
-      const q = query(collection(firestore, 'resumenMensual'), where('userId', '==', userId));
-      const snapshot = await getDocs(q);
-      const data = snapshot.docs.map(doc => doc.data());
+    const q = query(collection(firestore, 'resumenMensual'), where('userId', '==', userId));
+    const snapshot = await getDocs(q);
+    const data = snapshot.docs.map(doc => doc.data());
 
-      const ordenado = data.sort((a, b) => {
-        if (a.año !== b.año) return b.año - a.año;
-        return b.mes - a.mes;
-      });
+    const ordenado = data.sort((a, b) => {
+      if (a.año !== b.año) return b.año - a.año;
+      return b.mes - a.mes;
+    });
 
-      setResumenes(ordenado);
-    };
+    setResumenes(ordenado);
+  };
 
-    cargarResumenes();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      cargarResumenes();
+    }, [])
+  );
 
   return (
     <View style={styles.container}>

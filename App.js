@@ -31,8 +31,18 @@ const UserTabNavigator = () => (
   <Tab.Navigator
     screenOptions={({ route }) => ({
       headerShown: true,
-      
+      headerTitleAlign: 'center',
       tabBarLabelStyle: { fontSize: 13 },
+      tabBarStyle: {
+        position: 'absolute',
+  bottom: 10,
+  left: 16,
+  right: 16,
+  borderRadius: 20,
+  backgroundColor: '#fff',
+  elevation: 4, // sombra Android
+  height: 65,
+      },
       tabBarIcon: ({ color, size }) => {
         let iconName;
 

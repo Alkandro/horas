@@ -11,8 +11,9 @@ import {
   Platform,
   SafeAreaView,
 } from 'react-native';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc, getDocs, collection, query, where, setDoc } from 'firebase/firestore';
 import { firestore } from '../firebaseConfig';
+import dayjs from 'dayjs';
 
 const EditarRegistroScreen = ({ route, navigation }) => {
   const { registro } = route.params;
@@ -25,21 +26,102 @@ const EditarRegistroScreen = ({ route, navigation }) => {
   const handleGuardar = async () => {
     try {
       const docRef = doc(firestore, 'production', registro.id);
+      const nuevaCantidad = parseFloat(cantidad);
+  
+      // Actualizar el documento de producción
       await updateDoc(docRef, {
-        cantidad: parseFloat(cantidad),
+        cantidad: nuevaCantidad,
         tipoPieza,
       });
-
-      Alert.alert('Éxito', 'Registro actualizado');
+  
+      // Calcular el nuevo total mensual
+      const userId = registro.userId;
+      const fecha = registro.fecha;
+  
+      if (!userId || !fecha) {
+        throw new Error('userId o fecha no definidos para el registro');
+      }
+  
+      const date = dayjs(fecha);
+      const año = date.year();
+      const mes = date.month() + 1;
+  
+      const snapshot = await getDocs(
+        query(
+          collection(firestore, 'production'),
+          where('userId', '==', userId)
+        )
+      );
+  
+      const registrosDelMes = snapshot.docs
+        .map(doc => doc.data())
+        .filter(d => {
+          const f = dayjs(d.fecha);
+          return f.year() === año && f.month() + 1 === mes;
+        });
+  
+      const nuevoTotal = registrosDelMes.reduce((acc, item) => {
+        const v = Number(item.valorNudo);
+        const n = Number(item.nudos);
+        const c = Number(item.cantidad);
+        if (!isNaN(v) && !isNaN(n) && !isNaN(c)) {
+          return acc + v * n * c;
+        }
+        return acc;
+      }, 0);
+  
+      const resumenId = `${userId}_${año}_${mes}`;
+      await setDoc(doc(firestore, 'resumenMensual', resumenId), {
+        userId,
+        año,
+        mes,
+        total: nuevoTotal,
+        actualizadoEl: new Date(),
+      });
+  
+      Alert.alert('Éxito', 'Registro y resumen mensual actualizados');
       navigation.goBack();
     } catch (error) {
       console.error('Error al actualizar:', error);
-      Alert.alert('Error', 'No se pudo actualizar el registro');
+      Alert.alert('Error', 'No se pudo actualizar el registro y el resumen mensual');
     }
   };
+  
 
   const handleCancelar = () => {
     navigation.goBack();
+  };
+
+  const recalcularResumenMensual = async (userId, fechaISO) => {
+    const fecha = dayjs(fechaISO);
+    const año = fecha.year();
+    const mes = fecha.month() + 1;
+
+    const q = query(
+      collection(firestore, 'production'),
+      where('userId', '==', userId)
+    );
+    const snapshot = await getDocs(q);
+    const datos = snapshot.docs
+      .map(doc => doc.data())
+      .filter(item => {
+        const itemFecha = dayjs(item.fecha);
+        return itemFecha.year() === año && itemFecha.month() + 1 === mes;
+      });
+
+    const total = datos.reduce((acc, item) => {
+      return acc + Number(item.valorNudo) * Number(item.nudos) * Number(item.cantidad);
+    }, 0);
+
+    const resumenId = `${userId}_${año}_${mes}`;
+    const resumenDocRef = doc(firestore, 'resumenMensual', resumenId);
+    await setDoc(resumenDocRef, {
+      userId,
+      año,
+      mes,
+      total,
+      actualizadoEl: new Date()
+    });
   };
 
   return (
@@ -97,6 +179,8 @@ const EditarRegistroScreen = ({ route, navigation }) => {
             <View style={{ height: 10 }} />
             <Button title="Cancelar" color="#888" onPress={handleCancelar} />
           </View>
+         
+
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

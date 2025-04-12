@@ -240,7 +240,7 @@ const AdminUserDetailsScreen = ({ route, navigation }) => {
             setOpen={setOpenAño}
             setValue={setAñoSeleccionado}
             setItems={setItemsAño}
-            containerStyle={{ width: 120, marginRight: 10 }}
+            containerStyle={styles.dropdownHalf}
             zIndex={3000}
             zIndexInverse={1000}
           />
@@ -253,7 +253,7 @@ const AdminUserDetailsScreen = ({ route, navigation }) => {
             setOpen={setOpenMes}
             setValue={setMesSeleccionado}
             setItems={setItemsMes}
-            containerStyle={{ width: 120 }}
+            containerStyle={styles.dropdownHalf}
             zIndex={2000}
             zIndexInverse={2000}
           />
@@ -305,12 +305,14 @@ const styles = StyleSheet.create({
     marginTop: 20,
     marginBottom: 10,
   },
-  dropdownContainer: { flexDirection: "row", marginBottom: 15 },
-  itemContainer: {
-    backgroundColor: "#eaeaea",
-    padding: 12,
-    marginBottom: 10,
-    borderRadius: 6,
+  dropdownContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 15,
+    zIndex: 1000,
+  },
+  dropdownHalf: {
+    width: "48%",
   },
   itemDate: { fontWeight: "bold", marginBottom: 6 },
   itemText: { fontSize: 14, marginLeft: 6 },

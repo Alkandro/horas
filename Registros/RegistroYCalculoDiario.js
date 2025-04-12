@@ -11,8 +11,9 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { auth, firestore } from '../firebaseConfig';
-import { collection, getDocs, addDoc } from 'firebase/firestore';
+import { collection, getDocs, addDoc, doc, getDoc, setDoc } from 'firebase/firestore';
 import { Picker } from '@react-native-picker/picker';
+import dayjs from 'dayjs';
 
 const RegistroYCalculoDiario = () => {
   const [cantidadPiezas, setCantidadPiezas] = useState('');
@@ -54,7 +55,7 @@ const RegistroYCalculoDiario = () => {
   const handleSeleccionArticulo = (nombre) => {
     setTipoPieza(nombre);
     const articulo = articulos.find(a => a.nombre === nombre);
-  
+
     if (articulo) {
       setValorNudo(articulo.valorNudo ?? 0);
       setCantidadNudosPorPieza(articulo.nudos ?? 0);
@@ -64,7 +65,6 @@ const RegistroYCalculoDiario = () => {
       setCantidadNudosPorPieza(0);
     }
   };
-  
 
   const agregarAlTotal = () => {
     const piezas = parseFloat(cantidadPiezas);
@@ -78,10 +78,9 @@ const RegistroYCalculoDiario = () => {
       tipoPieza,
       piezas,
       nudos: cantidadNudosPorPieza,
-      valorNudo: valorNudo, 
+      valorNudo: valorNudo,
       subtotal,
     };
-    
 
     setDetalles(prev => [...prev, nuevoDetalle]);
     setTotalDiario(prev => prev + subtotal);
@@ -92,28 +91,43 @@ const RegistroYCalculoDiario = () => {
     try {
       const userId = auth.currentUser?.uid;
       if (!userId || detalles.length === 0) return;
-  
-      // Verifica que todos los detalles tengan los datos necesarios
+
       const datosIncompletos = detalles.some((detalle) =>
         !detalle.tipoPieza || detalle.piezas == null || detalle.nudos == null || detalle.valorNudo == null
       );
-  
+
       if (datosIncompletos) {
         Alert.alert('Error', 'Uno o más artículos tienen datos incompletos. Verifica antes de guardar');
         return;
       }
-  
+
+      const now = dayjs();
+      const año = now.year();
+      const mes = now.month() + 1;
+      const resumenId = `${userId}_${año}_${mes}`;
+      const resumenRef = doc(firestore, 'resumenMensual', resumenId);
+      const resumenDoc = await getDoc(resumenRef);
+      const totalPrevio = resumenDoc.exists() ? resumenDoc.data().total : 0;
+
       for (const detalle of detalles) {
         await addDoc(collection(firestore, 'production'), {
           userId,
           cantidad: detalle.piezas,
           nudos: detalle.nudos,
           tipoPieza: detalle.tipoPieza,
-          valorNudo: detalle.valorNudo, // <--- Esto no debe ser undefined
+          valorNudo: detalle.valorNudo,
           fecha: new Date().toISOString(),
         });
       }
-  
+
+      await setDoc(resumenRef, {
+        userId,
+        año,
+        mes,
+        total: totalPrevio + totalDiario,
+        creadoEl: new Date(),
+      });
+
       await AsyncStorage.setItem('totalPiezas', JSON.stringify(totalDiario));
       Alert.alert('Éxito', 'Datos guardados correctamente');
       setDetalles([]);
@@ -123,10 +137,6 @@ const RegistroYCalculoDiario = () => {
       Alert.alert('Error', 'No se pudo guardar en Firestore');
     }
   };
-  
-  
-  
-  
 
   return (
     <ScrollView

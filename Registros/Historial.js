@@ -7,6 +7,7 @@ import {
   RefreshControl,
   FlatList,
   TouchableOpacity,
+  Button,
 } from "react-native";
 import {
   collection,
@@ -15,12 +16,15 @@ import {
   doc,
   setDoc,
   getDoc,
+  query,
+  where,
 } from "firebase/firestore";
 import { firestore, auth } from "../firebaseConfig";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import { Swipeable } from "react-native-gesture-handler";
 import DropDownPicker from "react-native-dropdown-picker";
+import { useFocusEffect } from "@react-navigation/native";
 
 dayjs.extend(utc);
 
@@ -55,6 +59,60 @@ const Historial = ({ navigation }) => {
     return dayjs(`${año}-${mes}-01`).isBefore(now.startOf("month"));
   };
 
+  const verificarResumenMensual = async () => {
+    const userId = auth.currentUser?.uid;
+    if (!userId) return;
+
+    const resumenId = `${userId}_${añoSeleccionado}_${mesSeleccionado}`;
+    const resumenDoc = await getDoc(doc(firestore, "resumenMensual", resumenId));
+    setResumenMensual(resumenDoc.exists() ? resumenDoc.data() : null);
+  };
+
+  const recalcularResumenMensual = async () => {
+    try {
+      const userId = auth.currentUser?.uid;
+      if (!userId) return;
+
+      const q = query(collection(firestore, "production"), where("userId", "==", userId));
+      const snapshot = await getDocs(q);
+
+      const datos = snapshot.docs
+        .map((doc) => doc.data())
+        .filter((item) => {
+          const fecha = dayjs(item.fecha);
+          return (
+            fecha.year() === añoSeleccionado &&
+            fecha.month() + 1 === mesSeleccionado
+          );
+        });
+
+      const total = datos.reduce((acc, item) => {
+        return (
+          acc +
+          Number(item.valorNudo) *
+            Number(item.nudos) *
+            Number(item.cantidad)
+        );
+      }, 0);
+
+      const resumenId = `${userId}_${añoSeleccionado}_${mesSeleccionado}`;
+      await setDoc(doc(firestore, "resumenMensual", resumenId), {
+        userId,
+        año: añoSeleccionado,
+        mes: mesSeleccionado,
+        total,
+        actualizadoEl: new Date(),
+      });
+
+      Alert.alert("Recalculado", "El resumen mensual ha sido actualizado.");
+      verificarResumenMensual(); // actualizar vista
+
+    } catch (error) {
+      console.error("Error al recalcular:", error);
+      Alert.alert("Error", "No se pudo recalcular el resumen.");
+    }
+  };
+
   const cargarHistorial = async () => {
     try {
       const userId = auth.currentUser?.uid;
@@ -66,54 +124,7 @@ const Historial = ({ navigation }) => {
         .filter((item) => item.userId === userId)
         .map((item) => ({ ...item, fecha: dayjs.utc(item.fecha) }));
 
-      const agrupadosPorMes = {};
-      const todosLosRegistrosActuales = [];
-
-      for (const item of data) {
-        const año = item.fecha.year();
-        const mes = item.fecha.month() + 1;
-        const clave = `${año}-${mes}`;
-        if (!agrupadosPorMes[clave]) agrupadosPorMes[clave] = [];
-        agrupadosPorMes[clave].push(item);
-      }
-
-      for (const [clave, registros] of Object.entries(agrupadosPorMes)) {
-        const [año, mes] = clave.split("-").map(Number);
-        const esMesAnterior = yearMonthIsBeforeNow(año, mes);
-
-        if (esMesAnterior) {
-          const resumenId = `${userId}_${año}_${mes}`;
-          const resumenDocRef = doc(firestore, "resumenMensual", resumenId);
-          const resumenDoc = await getDoc(resumenDocRef);
-
-          if (!resumenDoc.exists()) {
-            const total = registros.reduce((acc, item) => {
-              return (
-                acc +
-                Number(item.valorNudo) *
-                  Number(item.nudos) *
-                  Number(item.cantidad)
-              );
-            }, 0);
-
-            await setDoc(resumenDocRef, {
-              userId,
-              año,
-              mes,
-              total,
-              creadoEl: new Date(),
-            });
-
-            for (const reg of registros) {
-              await deleteDoc(doc(firestore, "production", reg.id));
-            }
-          }
-        } else {
-          todosLosRegistrosActuales.push(...registros);
-        }
-      }
-
-      setHistorial(todosLosRegistrosActuales);
+      setHistorial(data);
     } catch (error) {
       console.error("Error al cargar historial:", error);
       Alert.alert("Error", "No se pudo cargar el historial");
@@ -122,20 +133,15 @@ const Historial = ({ navigation }) => {
 
   useEffect(() => {
     cargarHistorial();
-  }, [añoSeleccionado, mesSeleccionado]);
-
-  useEffect(() => {
-    const verificarResumenMensual = async () => {
-      const userId = auth.currentUser?.uid;
-      if (!userId) return;
-
-      const resumenId = `${userId}_${añoSeleccionado}_${mesSeleccionado}`;
-      const resumenDoc = await getDoc(doc(firestore, "resumenMensual", resumenId));
-      setResumenMensual(resumenDoc.exists() ? resumenDoc.data() : null);
-    };
-
     verificarResumenMensual();
   }, [añoSeleccionado, mesSeleccionado]);
+
+  useFocusEffect(
+    useCallback(() => {
+      cargarHistorial();
+      verificarResumenMensual();
+    }, [añoSeleccionado, mesSeleccionado])
+  );
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -166,6 +172,10 @@ const Historial = ({ navigation }) => {
       tipoPieza: item.tipoPieza,
       cantidad: item.cantidad,
       ganancia: ganancia,
+      valorNudo: item.valorNudo,
+      nudos: item.nudos,
+      userId: item.userId,
+      fecha: item.fecha,
     });
 
     acc[fechaClave].totalDia += ganancia;
@@ -200,7 +210,13 @@ const Historial = ({ navigation }) => {
       <TouchableOpacity
         style={styles.editButton}
         onPress={() =>
-          navigation.navigate("EditarRegistro", { registro: item })
+          navigation.navigate("EditarRegistro", {
+            registro: {
+              ...item,
+              userId: auth.currentUser?.uid,
+              fecha: item.fecha?.toISOString?.() || item.fecha,
+            },
+          })
         }
       >
         <Text style={styles.actionText}>Editar</Text>
@@ -227,7 +243,7 @@ const Historial = ({ navigation }) => {
     <View style={styles.container}>
       <Text style={styles.title}>Historial de Producción</Text>
 
-      <View style={{ zIndex: 20, marginBottom: 10 }}>
+      <View style={styles.dropdownRow}>
         <DropDownPicker
           open={openAño}
           value={añoSeleccionado}
@@ -235,12 +251,11 @@ const Historial = ({ navigation }) => {
           setOpen={setOpenAño}
           setValue={setAñoSeleccionado}
           setItems={setAñosItems}
-          onChangeValue={() => setResumenMensual(null)}
-          placeholder="Año"
+          containerStyle={styles.dropdownHalf}
+          zIndex={3000}
+          zIndexInverse={1000}
         />
-      </View>
 
-      <View style={{ zIndex: 10, marginBottom: 15 }}>
         <DropDownPicker
           open={openMes}
           value={mesSeleccionado}
@@ -248,29 +263,24 @@ const Historial = ({ navigation }) => {
           setOpen={setOpenMes}
           setValue={setMesSeleccionado}
           setItems={setMesesItems}
-          onChangeValue={() => setResumenMensual(null)}
-          placeholder="Mes"
+          containerStyle={styles.dropdownHalf}
+          zIndex={2000}
+          zIndexInverse={2000}
         />
       </View>
 
       <Text style={styles.total}>
-        Total mensual: {" "}
+        Total mensual:{" "}
         {resumenMensual
           ? `¥${Math.round(resumenMensual.total)} (guardado)`
           : `¥${Math.round(totalMensual)}`}
       </Text>
 
-      {historialFiltrado.length === 0 && resumenMensual && (
-        <View style={styles.item}>
-          <Text style={styles.fecha}>
-            {`${añoSeleccionado}-${String(mesSeleccionado).padStart(2, "0")}`}
-          </Text>
-          <Text>Total guardado del mes: ¥{Math.round(resumenMensual.total)}</Text>
-          <Text style={{ fontStyle: "italic", color: "#666" }}>
-            Este mes ya fue consolidado y los registros diarios fueron eliminados.
-          </Text>
-        </View>
-      )}
+      <Button
+        title="↻ Recalcular resumen mensual"
+        onPress={recalcularResumenMensual}
+        color="#4caf50"
+      />
 
       <FlatList
         data={historialComoArray}
@@ -298,13 +308,6 @@ const Historial = ({ navigation }) => {
             </Text>
           </View>
         )}
-        ListEmptyComponent={
-          resumenMensual ? null : (
-            <Text style={{ textAlign: "center", marginTop: 20 }}>
-              No hay registros para este mes.
-            </Text>
-          )
-        }
       />
     </View>
   );
@@ -318,7 +321,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     textAlign: "center",
   },
-  total: { fontSize: 18, fontWeight: "bold", marginBottom: 10 },
+  total: { fontSize: 18, fontWeight: "bold", marginBottom: 10, textAlign: "center" },
   item: {
     backgroundColor: "#f1f1f1",
     padding: 12,
@@ -353,6 +356,15 @@ const styles = StyleSheet.create({
   actionText: {
     color: "#fff",
     fontWeight: "bold",
+  },
+  dropdownRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 15,
+    zIndex: 1000,
+  },
+  dropdownHalf: {
+    width: "48%",
   },
 });
 
