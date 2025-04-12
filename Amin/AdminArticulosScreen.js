@@ -12,8 +12,10 @@ import {
 import { collection, getDocs, deleteDoc, doc } from 'firebase/firestore';
 import { firestore } from '../firebaseConfig';
 import Icon from 'react-native-vector-icons/Feather'; // O Ionicons si prefieres
+import { useTranslation } from "react-i18next";
 
 const AdminArticulosScreen = ({ navigation }) => {
+  const { t } = useTranslation(); // Hook para traducción
   const [articulos, setArticulos] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -23,7 +25,7 @@ const AdminArticulosScreen = ({ navigation }) => {
       const items = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
       setArticulos(items);
     } catch (error) {
-      console.error('Error al cargar artículos:', error);
+      console.error(t('Error al cargar artículos:'), error);
     }
   };
 
@@ -38,12 +40,12 @@ const AdminArticulosScreen = ({ navigation }) => {
 
   const eliminarArticulo = async (id) => {
     Alert.alert(
-      'Confirmar',
-      '¿Deseas eliminar este artículo?',
+      t('Confirmar'),
+      t('¿Deseas eliminar este artículo?'),
       [
-        { text: 'Cancelar', style: 'cancel' },
+        { text: t('Cancelar'), style: 'cancel' },
         {
-          text: 'Eliminar',
+          text: t('Eliminar'),
           onPress: async () => {
             await deleteDoc(doc(firestore, 'articulos', id));
             cargarArticulos();
@@ -67,9 +69,9 @@ const AdminArticulosScreen = ({ navigation }) => {
           </TouchableOpacity>
         </View>
       </View>
-      <Text>Tipo: {item.tipo}</Text>
-      <Text>Valor por nudo: ¥{item.valorNudo}</Text>
-      <Text>Nudos por pieza: {item.nudos}</Text>
+      <Text>{t("Tipo")}: {item.tipo}</Text>
+      <Text>{t("Valor por nudo")}: ¥{item.valorNudo}</Text>
+      <Text>{t("Nudos por pieza")}: {item.nudos}</Text>
     </View>
   );
 

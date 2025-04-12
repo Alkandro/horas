@@ -11,9 +11,11 @@ import {
   Platform,
 } from 'react-native';
 import { collection, addDoc } from 'firebase/firestore';
+import { useTranslation } from "react-i18next";
 import { firestore } from '../firebaseConfig';
 
 const AdminCrearArticuloScreen = () => {
+  const { t } = useTranslation(); // Hook para traducción
   const [nombre, setNombre] = useState('');
   const [tipo, setTipo] = useState('');
   const [valorNudo, setValorNudo] = useState('');
@@ -63,7 +65,7 @@ const AdminCrearArticuloScreen = () => {
         <Text style={styles.title}>Crear Artículo</Text>
 
         <TextInput
-          placeholder="Modelo"
+          placeholder={t("Modelo")}
           style={styles.input}
           value={nombre}
           onChangeText={setNombre}
