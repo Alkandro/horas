@@ -11,7 +11,6 @@ import RegisterScreen from "./Login/RegisterScreen";
 import Historial from "./Registros/Historial";
 import AdminHomeScreen from "./Amin/AdminHomeScreen";
 import AdminUserDetailsScreen from "./Amin/AdminUserDetailsScreen";
-import AdminCreateUserScreen from "./Amin/AdminCreateUserScreen";
 import UserProfileScreen from "./Registros/UserProfileScreen";
 import EditarPerfilScreen from "./Registros/EditarPerfilScreen";
 import RegistroYCalculoDiario from "./Registros/RegistroYCalculoDiario";
@@ -20,6 +19,7 @@ import EditarRegistroScreen from "./Registros/EditarRegistroScreen";
 import Toast from "react-native-toast-message";
 import ResumenMensual from "./Registros/ResumenMensual"; // Asegurate de que esta ruta sea correcta
 import AdminUserMonthlySummaryScreen from './Amin/AdminUserMonthlySummaryScreen';
+import EditarArticuloScreen from './Amin/EditarArticuloScreen';
 import { Ionicons } from "@expo/vector-icons";
 
 import { auth, firestore } from "./firebaseConfig";
@@ -84,6 +84,11 @@ const AdminStackNavigator = () => (
   component={AdminUserMonthlySummaryScreen}
   options={{ title: 'Resumen Mensual del Usuario' }}
 />
+<Stack.Screen
+      name="EditarArticulo"
+      component={EditarArticuloScreen}
+      options={{ title: "Editar Artículo" }}
+    />
   </Stack.Navigator>
 );
 

@@ -11,8 +11,9 @@ import {
 } from 'react-native';
 import { collection, getDocs, deleteDoc, doc } from 'firebase/firestore';
 import { firestore } from '../firebaseConfig';
+import Icon from 'react-native-vector-icons/Feather'; // O Ionicons si prefieres
 
-const AdminArticulosScreen = () => {
+const AdminArticulosScreen = ({ navigation }) => {
   const [articulos, setArticulos] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -38,7 +39,7 @@ const AdminArticulosScreen = () => {
   const eliminarArticulo = async (id) => {
     Alert.alert(
       'Confirmar',
-      '¿Estás seguro de que deseas eliminar este artículo?',
+      '¿Deseas eliminar este artículo?',
       [
         { text: 'Cancelar', style: 'cancel' },
         {
@@ -54,13 +55,22 @@ const AdminArticulosScreen = () => {
   };
 
   const renderItem = ({ item }) => (
-    <TouchableOpacity
-      style={styles.item}
-      onLongPress={() => eliminarArticulo(item.id)}
-    >
-      <Text style={styles.nombre}>{item.nombre}</Text>
+    <View style={styles.item}>
+      <View style={styles.row}>
+        <Text style={styles.nombre}>{item.nombre}</Text>
+        <View style={styles.iconos}>
+          <TouchableOpacity onPress={() => navigation.navigate('EditarArticulo', { articulo: item })}>
+            <Icon name="edit" size={18} color="#007bff" style={styles.icon} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => eliminarArticulo(item.id)}>
+            <Icon name="trash-2" size={18} color="#ff4444" style={styles.icon} />
+          </TouchableOpacity>
+        </View>
+      </View>
       <Text>Tipo: {item.tipo}</Text>
-    </TouchableOpacity>
+      <Text>Valor por nudo: ¥{item.valorNudo}</Text>
+      <Text>Nudos por pieza: {item.nudos}</Text>
+    </View>
   );
 
   return (
@@ -84,11 +94,13 @@ const AdminArticulosScreen = () => {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#fff' },
-  container: {
-    padding: 20,
-    flex: 1,
+  container: { padding: 20, flex: 1 },
+  title: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 15,
+    textAlign: 'center',
   },
-  title: { fontSize: 20, fontWeight: 'bold', marginBottom: 15, textAlign: 'center' },
   item: {
     padding: 12,
     borderRadius: 5,
@@ -97,7 +109,19 @@ const styles = StyleSheet.create({
   },
   nombre: {
     fontWeight: 'bold',
-    marginBottom: 4,
+    fontSize: 16,
+  },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  iconos: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  icon: {
+    marginLeft: 20,
   },
   empty: {
     textAlign: 'center',

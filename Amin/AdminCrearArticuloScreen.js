@@ -63,13 +63,13 @@ const AdminCrearArticuloScreen = () => {
         <Text style={styles.title}>Crear Artículo</Text>
 
         <TextInput
-          placeholder="Nombre del artículo"
+          placeholder="Modelo"
           style={styles.input}
           value={nombre}
           onChangeText={setNombre}
         />
         <TextInput
-          placeholder="Tipo de artículo"
+          placeholder="Tipo"
           style={styles.input}
           value={tipo}
           onChangeText={setTipo}
