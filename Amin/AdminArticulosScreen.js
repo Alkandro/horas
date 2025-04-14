@@ -25,7 +25,7 @@ const AdminArticulosScreen = ({ navigation }) => {
       const items = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
       setArticulos(items);
     } catch (error) {
-      console.error(t('Error al cargar artículos:'), error);
+      console.error(t('Error al cargar artículos'), error);
     }
   };
 
@@ -78,7 +78,7 @@ const AdminArticulosScreen = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-        <Text style={styles.title}>Artículos Creados</Text>
+        <Text style={styles.title}>{t("Artículos Creados")}</Text>
         <FlatList
           data={articulos}
           keyExtractor={(item) => item.id}
@@ -87,7 +87,7 @@ const AdminArticulosScreen = ({ navigation }) => {
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
           contentContainerStyle={{ paddingBottom: 30 }}
-          ListEmptyComponent={<Text style={styles.empty}>No hay artículos creados aún.</Text>}
+          ListEmptyComponent={<Text style={styles.empty}>{t("No hay artículos creados aún")}</Text>}
         />
       </View>
     </SafeAreaView>

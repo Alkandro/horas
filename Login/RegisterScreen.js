@@ -16,8 +16,10 @@ import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import { auth, firestore } from "../firebaseConfig";
 import axios from "axios";
+import { useTranslation } from "react-i18next";
 
 const RegisterScreen = ({ navigation }) => {
+  const { t } = useTranslation(); // Hook para traducción
   const [nombre, setNombre] = useState("");
   const [apellido, setApellido] = useState("");
   const [telefono, setTelefono] = useState("");
@@ -44,11 +46,11 @@ const RegisterScreen = ({ navigation }) => {
         setCiudad(d.address2);
         setBarrio(d.address3);
       } else {
-        Alert.alert("Aviso", "No se encontró dirección para ese código postal.");
+        Alert.alert(t("Aviso"), t("No se encontró dirección para ese código postal"));
       }
     } catch (error) {
-      console.error("Error buscando dirección:", error);
-      Alert.alert("Error", "No se pudo obtener la dirección.");
+      console.error(t("Error buscando dirección"), error);
+      Alert.alert(t("Error"), t("No se pudo obtener la dirección"));
     } finally {
       setCargandoDireccion(false);
     }
@@ -59,7 +61,7 @@ const RegisterScreen = ({ navigation }) => {
     setError("");
 
     if (password !== confirmPassword) {
-      setError("Las contraseñas no coinciden.");
+      setError(t("Las contraseñas no coinciden"));
       setLoading(false);
       return;
     }
@@ -84,10 +86,10 @@ const RegisterScreen = ({ navigation }) => {
         },
       });
 
-      console.log("Usuario registrado con rol:", role);
+      console.log(t("Usuario registrado con rol"), role);
     } catch (e) {
-      setError(e.message || "Error al crear la cuenta.");
-      console.error("Error de registro:", e);
+      setError(e.message || t("Error al crear la cuenta"));
+      console.error(t("Error de registro"), e);
     } finally {
       setLoading(false);
     }
@@ -107,14 +109,14 @@ const RegisterScreen = ({ navigation }) => {
           <TextInput style={styles.input} placeholder="Apellido" value={apellido} onChangeText={setApellido} />
           <TextInput
             style={styles.input}
-            placeholder="Teléfono"
+            placeholder={t("Teléfono")}
             value={telefono}
             onChangeText={setTelefono}
             keyboardType="phone-pad"
           />
           <TextInput
             style={styles.input}
-            placeholder="Correo Electrónico"
+            placeholder={t("Correo Electrónico")}
             value={email}
             onChangeText={setEmail}
             keyboardType="email-address"
@@ -123,17 +125,17 @@ const RegisterScreen = ({ navigation }) => {
 
           <TextInput
             style={styles.input}
-            placeholder="Código Postal"
+            placeholder={t("Código Postal")}
             value={codigoPostal}
             onChangeText={setCodigoPostal}
             keyboardType="numeric"
           />
-          <Button title="Autocompletar Dirección" onPress={handleAutoCompletarDireccion} />
+          <Button title={t("Autocompletar Dirección")} onPress={handleAutoCompletarDireccion} />
           {cargandoDireccion && <ActivityIndicator size="small" style={{ marginVertical: 10 }} />}
 
-          <TextInput style={styles.input} placeholder="Prefectura" value={prefectura} onChangeText={setPrefectura} />
-          <TextInput style={styles.input} placeholder="Ciudad" value={ciudad} onChangeText={setCiudad} />
-          <TextInput style={styles.input} placeholder="Barrio" value={barrio} onChangeText={setBarrio} />
+          <TextInput style={styles.input} placeholder={t("Provincia")} value={prefectura} onChangeText={setPrefectura} />
+          <TextInput style={styles.input} placeholder={t("Ciudad")} value={ciudad} onChangeText={setCiudad} />
+          <TextInput style={styles.input} placeholder={t("Barrio")} value={barrio} onChangeText={setBarrio} />
           <TextInput
             style={styles.input}
             placeholder="Ej. 1-1-1"
@@ -143,14 +145,14 @@ const RegisterScreen = ({ navigation }) => {
 
           <TextInput
             style={styles.input}
-            placeholder="Contraseña"
+            placeholder={t("Contraseña")}
             secureTextEntry
             value={password}
             onChangeText={setPassword}
           />
           <TextInput
             style={styles.input}
-            placeholder="Confirmar Contraseña"
+            placeholder={t("Confirmar Contraseña")}
             secureTextEntry
             value={confirmPassword}
             onChangeText={setConfirmPassword}
@@ -158,11 +160,11 @@ const RegisterScreen = ({ navigation }) => {
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
-          <Button title="Crear Cuenta" onPress={handleRegister} disabled={loading} />
+          <Button title={t("Crear Cuenta")} onPress={handleRegister} disabled={loading} />
           {loading && <ActivityIndicator style={styles.loading} />}
 
           <View style={{ marginTop: 20 }}>
-            <Button title="¿Ya tienes una cuenta? Iniciar Sesión" onPress={() => navigation.goBack()} />
+            <Button title={t("¿Ya tienes una cuenta? Iniciar Sesión")} onPress={() => navigation.goBack()} />
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

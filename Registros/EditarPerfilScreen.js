@@ -14,10 +14,11 @@ import {
 import { doc, updateDoc } from "firebase/firestore";
 import { firestore, auth } from "../firebaseConfig";
 import axios from "axios";
+import { useTranslation } from "react-i18next";
 
 const EditarPerfilScreen = ({ route, navigation }) => {
   const { userData } = route.params;
-
+  const { t } = useTranslation(); // Hook para traducción
   const [nombre, setNombre] = useState(userData.nombre || "");
   const [apellido, setApellido] = useState(userData.apellido || "");
   const [telefono, setTelefono] = useState(userData.telefono || "");
@@ -45,13 +46,13 @@ const EditarPerfilScreen = ({ route, navigation }) => {
         setBarrio(direccionData.address3);
       } else {
         Alert.alert(
-          "Aviso",
-          "No se encontró dirección para ese código postal."
+          t("Aviso"),
+          t("No se encontró dirección para ese código postal")
         );
       }
     } catch (error) {
-      console.error("Error al buscar dirección:", error);
-      Alert.alert("Error", "Hubo un problema al obtener la dirección.");
+      console.error(t("Error al buscar direcció:"), error);
+      Alert.alert(t("Error"), t("Hubo un problema al obtener la dirección"));
     }
   };
 
@@ -71,11 +72,11 @@ const EditarPerfilScreen = ({ route, navigation }) => {
           codigoPostal,
         },
       });
-      Alert.alert("Éxito", "Perfil actualizado correctamente");
+      Alert.alert(t("Éxito"), t("Perfil actualizado correctamente"));
       navigation.goBack();
     } catch (error) {
-      console.error("Error al actualizar perfil:", error);
-      Alert.alert("Error", "Hubo un problema al guardar los cambios.");
+      console.error(t("Error al actualizar perfil"), error);
+      Alert.alert(t("Error"), t("Hubo un problema al guardar los cambios"));
     }
   };
 
@@ -92,28 +93,28 @@ const EditarPerfilScreen = ({ route, navigation }) => {
         <ScrollView contentContainerStyle={styles.container}>
           <Text style={styles.title}>Editar Perfil</Text>
 
-          <Text style={styles.label}>Nombre</Text>
+          <Text style={styles.label}>{t("Nombre")}</Text>
           <TextInput
             style={styles.input}
             value={nombre}
             onChangeText={setNombre}
           />
 
-          <Text style={styles.label}>Apellido</Text>
+          <Text style={styles.label}>{t("Apellido")}</Text>
           <TextInput
             style={styles.input}
             value={apellido}
             onChangeText={setApellido}
           />
 
-          <Text style={styles.label}>Teléfono</Text>
+          <Text style={styles.label}>{t("Teléfono")}</Text>
           <TextInput
             style={styles.input}
             value={telefono}
             onChangeText={setTelefono}
             keyboardType="phone-pad"
           />
-          <Text style={styles.label}>Código Postal</Text>
+          <Text style={styles.label}>{t("Código Postal")}</Text>
           <TextInput
             style={styles.input}
             placeholder="Ej: 1000001"
@@ -122,32 +123,32 @@ const EditarPerfilScreen = ({ route, navigation }) => {
             keyboardType="numeric"
           />
           <Button
-            title="Autocompletar Dirección"
+            title={t("Autocompletar Dirección")}
             onPress={() => buscarDireccionPorCodigoPostal(codigoPostal)}
           />
 
-          <Text style={styles.label}>Prefectura</Text>
+          <Text style={styles.label}>{t("Provincia")}</Text>
           <TextInput
             style={styles.input}
             value={prefectura}
             onChangeText={setPrefectura}
           />
 
-          <Text style={styles.label}>Ciudad</Text>
+          <Text style={styles.label}>{t("Ciudad")}</Text>
           <TextInput
             style={styles.input}
             value={ciudad}
             onChangeText={setCiudad}
           />
 
-          <Text style={styles.label}>Barrio</Text>
+          <Text style={styles.label}>{t("Barrio")}</Text>
           <TextInput
             style={styles.input}
             value={barrio}
             onChangeText={setBarrio}
           />
 
-          <Text style={styles.label}>Número</Text>
+          <Text style={styles.label}>{t("Número")}</Text>
           <TextInput
             style={styles.input}
             value={numero}
@@ -155,9 +156,9 @@ const EditarPerfilScreen = ({ route, navigation }) => {
           />
 
           <View style={styles.buttonGroup}>
-            <Button title="Guardar Cambios" onPress={handleGuardar} />
+            <Button title={t("Guardar Cambios")} onPress={handleGuardar} />
             <View style={{ marginTop: 10 }} />
-            <Button title="Cancelar" color="#999" onPress={handleCancelar} />
+            <Button title={t("Cancelar")} color="#999" onPress={handleCancelar} />
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

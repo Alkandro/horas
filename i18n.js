@@ -4,49 +4,54 @@ import * as Localization from "expo-localization";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // Traducciones importadas
+import en from "./Idiomas/en.json";
 import es from "./Idiomas/es.json";
-// import es from "./Idiomas/es.json";
-// import ja from "./Idiomas/ja.json";
-// import pt from "./Idiomas/pt.json";
+import ja from "./Idiomas/ja.json";
+import pt from "./Idiomas/pt.json";
 
 // Recursos de idioma
 const resources = {
-  // en: { translation: en },
+  en: { translation: en },
   es: { translation: es },
-  // ja: { translation: ja },
-  // pt: { translation: pt },
+  ja: { translation: ja },
+  pt: { translation: pt },
 };
 
 // Función para obtener el idioma almacenado o el del dispositivo
 const getStoredLanguage = async () => {
-  const storedLang = await AsyncStorage.getItem("userLanguage");
-  if (storedLang && resources[storedLang]) {
-    return storedLang;
-  }
+  try {
+    const storedLang = await AsyncStorage.getItem("userLanguage");
+    if (storedLang && resources[storedLang]) {
+      return storedLang;
+    }
 
-  const deviceLang = Localization.locale.split("-")[0]; // Ej. "es", "ja"
-  return resources[deviceLang] ? deviceLang : "en";
+    const deviceLang = Localization.locale.split("-")[0]; // Ej. "es", "ja"
+    return resources[deviceLang] ? deviceLang : "en";
+  } catch (error) {
+    console.warn("Error detectando idioma:", error);
+    return "en";
+  }
 };
 
-// Inicialización base sin setear `lng` aún
+// Inicializar i18n (aún sin definir el idioma)
 i18n
   .use(initReactI18next)
   .init({
     resources,
     fallbackLng: "en",
     compatibilityJSON: "v3",
-    debug: __DEV__, // Solo en desarrollo
+    debug: false, // siempre en false por si __DEV__ se comporta distinto
     interpolation: {
-      escapeValue: false, // React ya se encarga de escapar
+      escapeValue: false,
     },
   });
 
-// Seteo dinámico del idioma una vez detectado
+// Detectar y aplicar el idioma en segundo plano
 getStoredLanguage().then((lang) => {
   i18n.changeLanguage(lang);
 });
 
-// Función para cambiar idioma y guardarlo
+// Función pública para cambiar idioma desde la app
 export const changeLanguage = async (lang) => {
   if (resources[lang]) {
     await AsyncStorage.setItem("userLanguage", lang);

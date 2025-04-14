@@ -14,8 +14,10 @@ import { auth, firestore } from '../firebaseConfig';
 import { collection, getDocs, addDoc, doc, getDoc, setDoc } from 'firebase/firestore';
 import { Picker } from '@react-native-picker/picker';
 import dayjs from 'dayjs';
+import { useTranslation } from "react-i18next";
 
 const RegistroYCalculoDiario = () => {
+  const { t } = useTranslation(); // Hook para traducción
   const [cantidadPiezas, setCantidadPiezas] = useState('');
   const [totalDiario, setTotalDiario] = useState(0);
   const [articulos, setArticulos] = useState([]);
@@ -39,7 +41,7 @@ const RegistroYCalculoDiario = () => {
       });
       setArticulos(lista);
     } catch (error) {
-      console.error('Error al cargar artículos:', error);
+      console.error(t('Error al cargar artículos:'), error);
     }
   };
 
@@ -60,7 +62,7 @@ const RegistroYCalculoDiario = () => {
       setValorNudo(articulo.valorNudo ?? 0);
       setCantidadNudosPorPieza(articulo.nudos ?? 0);
     } else {
-      console.warn('Artículo no encontrado:', nombre);
+      console.warn(t('Artículo no encontrado:'), nombre);
       setValorNudo(0);
       setCantidadNudosPorPieza(0);
     }
@@ -69,7 +71,7 @@ const RegistroYCalculoDiario = () => {
   const agregarAlTotal = () => {
     const piezas = parseFloat(cantidadPiezas);
     if (!tipoPieza || isNaN(piezas) || piezas <= 0) {
-      Alert.alert('Aviso', 'Por favor seleccione un artículo y cantidad válida.');
+      Alert.alert(t('Aviso'), t('Por favor seleccione un artículo y cantidad válida.'));
       return;
     }
 
@@ -97,7 +99,7 @@ const RegistroYCalculoDiario = () => {
       );
 
       if (datosIncompletos) {
-        Alert.alert('Error', 'Uno o más artículos tienen datos incompletos. Verifica antes de guardar');
+        Alert.alert(t('Error'), t('Uno o más artículos tienen datos incompletos. Verifica antes de guardar'));
         return;
       }
 
@@ -129,12 +131,12 @@ const RegistroYCalculoDiario = () => {
       });
 
       await AsyncStorage.setItem('totalPiezas', JSON.stringify(totalDiario));
-      Alert.alert('Éxito', 'Datos guardados correctamente');
+      Alert.alert(t('Éxito'), t('Datos guardados correctamente'));
       setDetalles([]);
       setTotalDiario(0);
     } catch (error) {
-      console.error('Error al guardar en Firestore:', error);
-      Alert.alert('Error', 'No se pudo guardar en Firestore');
+      console.error(t('Error al guardar en Firestore:'), error);
+      Alert.alert(t('Error'), t('No se pudo guardar en Firestore'));
     }
   };
 
@@ -149,7 +151,7 @@ const RegistroYCalculoDiario = () => {
         onValueChange={handleSeleccionArticulo}
         style={styles.picker}
       >
-        <Picker.Item label="Seleccione un artículo" value="" />
+        <Picker.Item label={t("Seleccione un artículo")} value="" />
         {articulos.map((articulo) => (
           <Picker.Item key={articulo.id} label={articulo.nombre} value={articulo.nombre} />
         ))}
@@ -157,35 +159,35 @@ const RegistroYCalculoDiario = () => {
 
       {tipoPieza ? (
         <View style={{ marginBottom: 15 }}>
-          <Text style={styles.boldText}>Valor por nudo: ¥{valorNudo}</Text>
-          <Text style={styles.boldText}>Nudos por pieza: {cantidadNudosPorPieza}</Text>
+          <Text style={styles.boldText}>{t("Valor por nudo")}: ¥{valorNudo}</Text>
+          <Text style={styles.boldText}>{t("Nudos por pieza")}: {cantidadNudosPorPieza}</Text>
         </View>
       ) : null}
 
       <TextInput
-        placeholder="Cantidad de piezas"
+        placeholder={t("Cantidad de piezas")}
         keyboardType="numeric"
         onChangeText={setCantidadPiezas}
         value={cantidadPiezas}
         style={styles.input}
       />
 
-      <Button title="Agregar" onPress={agregarAlTotal} />
+      <Button title={t("Agregar")} onPress={agregarAlTotal} />
 
       <View style={{ marginVertical: 20 }}>
-        <Text style={styles.subtitle}>Resumen del día:</Text>
+        <Text style={styles.subtitle}>{t("Resumen del día")}:</Text>
         {detalles.map((item, index) => (
           <Text key={index} style={styles.item}>
-            {item.tipoPieza} - {item.piezas} piezas - Subtotal: ¥{item.subtotal.toFixed(0)}
+            {item.tipoPieza} - {item.piezas} {t("piezas - Subtotal")}: ¥{item.subtotal.toFixed(0)}
           </Text>
         ))}
       </View>
 
       <Text style={styles.result}>
-        Total diario: <Text style={styles.boldText}>¥{totalDiario.toFixed(0)}</Text>
+        {t("Total diario")}: <Text style={styles.boldText}>¥{totalDiario.toFixed(0)}</Text>
       </Text>
 
-      <Button title="Guardar y Enviar" onPress={guardarEnFirestore} />
+      <Button title={t("Guardar y Enviar")} onPress={guardarEnFirestore} />
     </ScrollView>
   );
 };

@@ -25,10 +25,12 @@ import utc from "dayjs/plugin/utc";
 import { Swipeable } from "react-native-gesture-handler";
 import DropDownPicker from "react-native-dropdown-picker";
 import { useFocusEffect } from "@react-navigation/native";
+import { useTranslation } from "react-i18next";
 
 dayjs.extend(utc);
 
 const Historial = ({ navigation }) => {
+  const { t } = useTranslation(); // Hook para traducción
   const [historial, setHistorial] = useState([]);
   const [resumenMensual, setResumenMensual] = useState(null);
   const [añoSeleccionado, setAñoSeleccionado] = useState(dayjs().year());
@@ -104,12 +106,12 @@ const Historial = ({ navigation }) => {
         actualizadoEl: new Date(),
       });
 
-      Alert.alert("Recalculado", "El resumen mensual ha sido actualizado.");
+      Alert.alert(t("Recalculado"), t("El resumen mensual ha sido actualizado"));
       verificarResumenMensual(); // actualizar vista
 
     } catch (error) {
-      console.error("Error al recalcular:", error);
-      Alert.alert("Error", "No se pudo recalcular el resumen.");
+      console.error(t("Error al recalcular"), error);
+      Alert.alert(t("Error"), t("No se pudo recalcular el resumen"));
     }
   };
 
@@ -126,8 +128,8 @@ const Historial = ({ navigation }) => {
 
       setHistorial(data);
     } catch (error) {
-      console.error("Error al cargar historial:", error);
-      Alert.alert("Error", "No se pudo cargar el historial");
+      console.error(t("Error al cargar historial"), error);
+      Alert.alert(t("Error"), t("No se pudo cargar el historial"));
     }
   };
 
@@ -224,24 +226,24 @@ const Historial = ({ navigation }) => {
       <TouchableOpacity
         style={styles.deleteButton}
         onPress={() =>
-          Alert.alert("Confirmar", "¿Eliminar este registro?", [
+          Alert.alert(t("Confirmar"), t("¿Eliminar este registro?"), [
             { text: "Cancelar", style: "cancel" },
             {
-              text: "Eliminar",
+              text: t("Eliminar"),
               onPress: () => eliminarRegistro(item.id),
               style: "destructive",
             },
           ])
         }
       >
-        <Text style={styles.actionText}>Eliminar</Text>
+        <Text style={styles.actionText}>{t("Eliminar")}</Text>
       </TouchableOpacity>
     </View>
   );
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Historial de Producción</Text>
+      <Text style={styles.title}>{t("Historial de Producción")}</Text>
 
       <View style={styles.dropdownRow}>
         <DropDownPicker
@@ -270,14 +272,14 @@ const Historial = ({ navigation }) => {
       </View>
 
       <Text style={styles.total}>
-        Total mensual:{" "}
+        {t("Total mensual")}:{" "}
         {resumenMensual
           ? `¥${Math.round(resumenMensual.total)} (guardado)`
           : `¥${Math.round(totalMensual)}`}
       </Text>
 
       <Button
-        title="↻ Recalcular resumen mensual"
+        title={t("↻ Recalcular resumen mensual")}
         onPress={recalcularResumenMensual}
         color="#4caf50"
       />
@@ -297,14 +299,14 @@ const Historial = ({ navigation }) => {
                 renderRightActions={() => renderRightActions(pieza)}
               >
                 <View style={styles.pieza}>
-                  <Text>Tipo: {pieza.tipoPieza}</Text>
-                  <Text>Piezas: {pieza.cantidad}</Text>
-                  <Text>Ganancia: ¥{Math.round(pieza.ganancia)}</Text>
+                  <Text>{t("Tipo")}: {pieza.tipoPieza}</Text>
+                  <Text>{t("Piezas")}: {pieza.cantidad}</Text>
+                  <Text>{t("Ganancia")}: ¥{Math.round(pieza.ganancia)}</Text>
                 </View>
               </Swipeable>
             ))}
             <Text style={styles.totalDia}>
-              Total día: ¥{Math.round(item.totalDia)}
+              {t("Total día")}: ¥{Math.round(item.totalDia)}
             </Text>
           </View>
         )}

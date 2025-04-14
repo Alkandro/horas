@@ -20,8 +20,10 @@ import {
 import { useFocusEffect } from "@react-navigation/native";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { firestore, auth } from "../firebaseConfig";
+import { useTranslation } from "react-i18next";
 
 const AdminHomeScreen = ({ navigation }) => {
+  const { t } = useTranslation(); // Hook para traducción
   const [usersData, setUsersData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -66,8 +68,8 @@ const AdminHomeScreen = ({ navigation }) => {
 
       setUsersData(usersList);
     } catch (e) {
-      setError("Error al obtener datos de usuarios.");
-      console.error("Error fetching admin data:", e);
+      setError(t("Error al obtener datos de usuarios"));
+      console.error(t("Error fetching admin data"), e);
     } finally {
       if (isRefreshing) {
         setRefreshing(false);
@@ -87,7 +89,7 @@ const AdminHomeScreen = ({ navigation }) => {
     try {
       await auth.signOut();
     } catch (error) {
-      console.error("Error al cerrar sesión:", error);
+      console.error(t("Error al cerrar sesión"), error);
     }
   };
 
@@ -98,7 +100,7 @@ const AdminHomeScreen = ({ navigation }) => {
   if (loading) {
     return (
       <View>
-        <Text>Cargando datos...</Text>
+        <Text>{t("Cargando datos...")}</Text>
       </View>
     );
   }
@@ -106,26 +108,26 @@ const AdminHomeScreen = ({ navigation }) => {
   if (error) {
     return (
       <View>
-        <Text>Error: {error}</Text>
+        <Text>{t("Error")} {error}</Text>
       </View>
     );
   }
   const confirmarEliminacionUsuario = (userId) => {
     Alert.alert(
-      "Confirmar eliminación",
-      "¿Estás seguro de que quieres eliminar este usuario?",
+      t("Confirmar eliminación"),
+      t("¿Estás seguro de que quieres eliminar este usuario?"),
       [
-        { text: "Cancelar", style: "cancel" },
+        { text: t("Cancelar"), style: "cancel" },
         {
-          text: "Eliminar",
+          text: t("Eliminar"),
           style: "destructive",
           onPress: async () => {
             try {
               await deleteDoc(doc(firestore, "users", userId));
               fetchUsersData(true); // Refrescar lista
             } catch (error) {
-              console.error("Error al eliminar usuario:", error);
-              Alert.alert("Error", "No se pudo eliminar el usuario.");
+              console.error(t("Error al eliminar usuario"), error);
+              Alert.alert(t("Error"), t("No se pudo eliminar el usuario"));
             }
           },
         },
@@ -137,16 +139,16 @@ const AdminHomeScreen = ({ navigation }) => {
     try {
       await deleteDoc(doc(firestore, "users", userId));
       setUsersData(usersData.filter((u) => u.userId !== userId));
-      Alert.alert("Usuario eliminado");
+      Alert.alert(t("Usuario eliminado"));
     } catch (error) {
-      console.error("Error al eliminar usuario:", error);
-      Alert.alert("Error", "No se pudo eliminar el usuario");
+      console.error(t("Error al eliminar usuario"), error);
+      Alert.alert(t("Error"), t("No se pudo eliminar el usuario"));
     }
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Panel de Administración</Text>
+      <Text style={styles.title}>{t("Panel de Administración")}</Text>
       <FlatList
         data={usersData}
         keyExtractor={(item) => item.userId}
@@ -166,8 +168,8 @@ const AdminHomeScreen = ({ navigation }) => {
                 <Text style={styles.userName}>
                   {item.nombre} {item.apellido}
                 </Text>
-                <Text>Teléfono: {item.telefono || "No disponible"}</Text>
-                <Text style={styles.userName}>Usuario: {item.email}</Text>
+                <Text>{t("Teléfono")}: {item.telefono || t("No disponible")}</Text>
+                <Text style={styles.userName}>{t("Usuario")}: {item.email}</Text>
               </View>
               <TouchableOpacity
                 onPress={() => confirmarEliminacionUsuario(item.userId)}
@@ -182,7 +184,7 @@ const AdminHomeScreen = ({ navigation }) => {
         onRefresh={() => fetchUsersData(true)}
       />
 
-      <Button title="Cerrar Sesión" onPress={handleLogout} />
+      <Button title={t("Cerrar Sesión")} onPress={handleLogout} />
     </View>
   );
 };

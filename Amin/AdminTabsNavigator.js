@@ -5,11 +5,13 @@ import AdminHomeScreen from './AdminHomeScreen';
 import AdminCrearArticuloScreen from './AdminCrearArticuloScreen';
 import AdminArticulosScreen from './AdminArticulosScreen';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from "react-i18next";
 
 const Tab = createBottomTabNavigator();
 
 
 const AdminTabsNavigator = () => {
+  const { t } = useTranslation(); // Hook para traducción
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -28,9 +30,9 @@ const AdminTabsNavigator = () => {
         headerShown: false,
       })}
     >
-      <Tab.Screen name="Usuarios" component={AdminHomeScreen} />
-      <Tab.Screen name="Crear Artículo" component={AdminCrearArticuloScreen} />
-      <Tab.Screen name="Ver Artículos" component={AdminArticulosScreen} />
+      <Tab.Screen name={t("Usuarios")} component={AdminHomeScreen} />
+      <Tab.Screen name={t("Crear Artículo")} component={AdminCrearArticuloScreen} />
+      <Tab.Screen name={t("Ver Artículos")} component={AdminArticulosScreen} />
       
     </Tab.Navigator>
   );

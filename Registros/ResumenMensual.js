@@ -3,8 +3,10 @@ import { View, Text, FlatList, StyleSheet } from 'react-native';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { firestore, auth } from '../firebaseConfig';
 import { useFocusEffect } from '@react-navigation/native';
+import { useTranslation } from "react-i18next";
 
 const ResumenMensual = () => {
+  const { t } = useTranslation(); // Hook para traducción
   const [resumenes, setResumenes] = useState([]);
 
   const cargarResumenes = async () => {
@@ -31,14 +33,14 @@ const ResumenMensual = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Resumen Histórico Mensual</Text>
+      <Text style={styles.title}>{t("Resumen Histórico Mensual")}</Text>
       <FlatList
         data={resumenes}
         keyExtractor={(item, index) => `${item.año}-${item.mes}-${index}`}
         renderItem={({ item }) => (
           <View style={styles.item}>
             <Text style={styles.text}>{item.año}.{item.mes}</Text>
-            <Text style={styles.total}>Total: ¥{Math.round(item.total)}</Text>
+            <Text style={styles.total}>{t("Total")}: ¥{Math.round(item.total)}</Text>
           </View>
         )}
       />

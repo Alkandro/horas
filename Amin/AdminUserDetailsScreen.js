@@ -1,94 +1,3 @@
-// import React from 'react';
-// import { View, Text, FlatList, StyleSheet, SafeAreaView } from 'react-native';
-
-// const AdminUserDetailsScreen = ({ route }) => {
-//   const { user } = route.params;
-
-//   const renderItem = ({ item }) => (
-//     <View style={styles.productionItem}>
-//       <Text>Tipo de Pieza: {item.tipoPieza}</Text>
-//       <Text>Cantidad: {item.cantidad}</Text>
-//       <Text>Nudos: {item.nudos}</Text>
-//       <Text>Fecha: {new Date(item.fecha).toLocaleDateString()}</Text>
-//     </View>
-//   );
-
-//   return (
-//     <SafeAreaView style={styles.safeArea}>
-//       <FlatList
-//         ListHeaderComponent={
-//           <View style={styles.headerContainer}>
-//             <Text style={styles.title}>Detalles de {user.email}</Text>
-
-//             <View style={styles.userInfo}>
-//               <Text>
-//                 <Text style={styles.label}>Nombre:</Text> {user.nombre}
-//               </Text>
-//               <Text>
-//                 <Text style={styles.label}>Apellido:</Text> {user.apellido}
-//               </Text>
-//               <Text>
-//                 <Text style={styles.label}>Teléfono:</Text> {user.telefono}
-//               </Text>
-//               <Text style={styles.label}>Dirección:</Text>
-//               <Text>
-//                 {`${user.direccion?.prefectura || ''}, ${user.direccion?.ciudad || ''}, ${user.direccion?.barrio || ''}, ${user.direccion?.numero || ''}`}
-//               </Text>
-//               <Text style={styles.label}>Código Postal:</Text>
-//               <Text>{user.direccion?.codigoPostal || 'No disponible'}</Text>
-//               <Text style={styles.subtitle}>Producción</Text>
-//             </View>
-//           </View>
-//         }
-//         data={user.productionData || []}
-//         keyExtractor={(item, index) => index.toString()}
-//         renderItem={renderItem}
-//         contentContainerStyle={{ paddingBottom: 30, paddingHorizontal: 16 }}
-//         ListEmptyComponent={<Text>No hay datos de producción para este usuario.</Text>}
-//       />
-//     </SafeAreaView>
-//   );
-// };
-
-// const styles = StyleSheet.create({
-//   safeArea: {
-//     flex: 1,
-//     backgroundColor: '#fff',
-//   },
-//   headerContainer: {
-//     paddingVertical: 16,
-//   },
-//   title: {
-//     fontSize: 22,
-//     fontWeight: 'bold',
-//     marginBottom: 10,
-//     textAlign: 'center',
-//   },
-//   userInfo: {
-//     backgroundColor: '#f3f3f3',
-//     padding: 15,
-//     borderRadius: 8,
-//     marginBottom: 20,
-//   },
-//   label: {
-//     fontWeight: 'bold',
-//   },
-//   subtitle: {
-//     fontSize: 18,
-//     fontWeight: '600',
-//     marginTop: 15,
-//     marginBottom: 10,
-//   },
-//   productionItem: {
-//     backgroundColor: '#eaeaea',
-//     padding: 12,
-//     marginBottom: 8,
-//     borderRadius: 6,
-//   },
-// });
-
-// export default AdminUserDetailsScreen;
-
 import React, { useEffect, useState } from "react";
 import {
   View,
@@ -111,10 +20,12 @@ import {
 import DropDownPicker from "react-native-dropdown-picker";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
+import { useTranslation } from "react-i18next";
 
 dayjs.extend(utc);
 
 const AdminUserDetailsScreen = ({ route, navigation }) => {
+  const { t } = useTranslation(); // Hook para traducción
   const { user } = route.params;
   const [historial, setHistorial] = useState([]);
   const [añoSeleccionado, setAñoSeleccionado] = useState(dayjs().year());
@@ -183,8 +94,8 @@ const AdminUserDetailsScreen = ({ route, navigation }) => {
           )
         );
       } catch (error) {
-        console.error("Error al cargar producción del usuario:", error);
-        Alert.alert("Error", "No se pudo cargar la producción.");
+        console.error(t("Error al cargar producción del usuario"), error);
+        Alert.alert(t("Error"),t( "No se pudo cargar la producción"));
       } finally {
         setLoading(false);
       }
@@ -201,27 +112,27 @@ const AdminUserDetailsScreen = ({ route, navigation }) => {
   return (
     <View style={styles.container}>
       <View style={styles.headerContainer}>
-        <Text style={styles.title}>Detalles de {user.email}</Text>
+        <Text style={styles.title}>{t("Detalles de")} {user.email}</Text>
         <View style={styles.userInfo}>
           <Text>
-            <Text style={styles.label}>Nombre:</Text> {user.nombre}
+            <Text style={styles.label}>{t("Nombre")}:</Text> {user.nombre}
           </Text>
           <Text>
-            <Text style={styles.label}>Apellido:</Text> {user.apellido}
+            <Text style={styles.label}>{t("Apellido")}:</Text> {user.apellido}
           </Text>
           <Text>
-            <Text style={styles.label}>Teléfono:</Text> {user.telefono}
+            <Text style={styles.label}>{t("Teléfono")}:</Text> {user.telefono}
           </Text>
-          <Text style={styles.label}>Dirección:</Text>
+          <Text style={styles.label}>{t("Dirección")}:</Text>
           <Text>{`${user.direccion?.prefectura || ""}, ${
             user.direccion?.ciudad || ""
           }, ${user.direccion?.barrio || ""}, ${
             user.direccion?.numero || ""
           }`}</Text>
-          <Text style={styles.label}>Código Postal:</Text>
-          <Text>{user.direccion?.codigoPostal || "No disponible"}</Text>
+          <Text style={styles.label}>{t("Código Postal")}:</Text>
+          <Text>{user.direccion?.codigoPostal || t("No disponible")}</Text>
           <Button
-            title="Ver resumen mensual"
+            title={t("Ver resumen mensual")}
             onPress={() =>
               navigation.navigate("AdminUserMonthlySummary", {
                 userId: user.userId,
@@ -229,11 +140,11 @@ const AdminUserDetailsScreen = ({ route, navigation }) => {
             }
           />
         </View>
-        <Text style={styles.subtitle}>Producción Mensual</Text>
+        <Text style={styles.subtitle}>{t("Producción Mensual")}</Text>
 
         <View style={styles.dropdownContainer}>
           <DropDownPicker
-            placeholder="Año"
+            placeholder={t("Año")}
             open={openAño}
             value={añoSeleccionado}
             items={itemsAño}
@@ -246,7 +157,7 @@ const AdminUserDetailsScreen = ({ route, navigation }) => {
           />
 
           <DropDownPicker
-            placeholder="Mes"
+            placeholder={t("Mes")}
             open={openMes}
             value={mesSeleccionado}
             items={itemsMes}
@@ -269,18 +180,18 @@ const AdminUserDetailsScreen = ({ route, navigation }) => {
             <Text style={styles.itemDate}>{item.fecha}</Text>
             {item.piezas.map((pieza, index) => (
               <Text key={index} style={styles.itemText}>
-                {pieza.tipoPieza} - {pieza.cantidad} piezas - ¥
+                {pieza.tipoPieza} - {pieza.cantidad}{t("piezas")} - ¥
                 {Math.round(pieza.ganancia)}
               </Text>
             ))}
             <Text style={styles.itemTotal}>
-              Total día: ¥{Math.round(item.totalDia)}
+              {t("Total día")}: ¥{Math.round(item.totalDia)}
             </Text>
           </View>
         )}
         ListEmptyComponent={
           <Text style={{ textAlign: "center", marginTop: 20 }}>
-            No hay registros para este mes.
+            {t("No hay registros para este mes")}
           </Text>
         }
       />

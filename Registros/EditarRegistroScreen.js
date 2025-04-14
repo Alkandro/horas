@@ -14,10 +14,11 @@ import {
 import { doc, updateDoc, getDocs, collection, query, where, setDoc } from 'firebase/firestore';
 import { firestore } from '../firebaseConfig';
 import dayjs from 'dayjs';
+import { useTranslation } from "react-i18next";
 
 const EditarRegistroScreen = ({ route, navigation }) => {
   const { registro } = route.params;
-
+  const { t } = useTranslation(); // Hook para traducción
   const [cantidad, setCantidad] = useState(String(registro.cantidad));
   const [tipoPieza, setTipoPieza] = useState(registro.tipoPieza);
   const [valorNudo] = useState(String(registro.valorNudo)); // solo mostrar
@@ -79,11 +80,11 @@ const EditarRegistroScreen = ({ route, navigation }) => {
         actualizadoEl: new Date(),
       });
   
-      Alert.alert('Éxito', 'Registro y resumen mensual actualizados');
+      Alert.alert(t('Éxito'), t('Registro y resumen mensual actualizados'));
       navigation.goBack();
     } catch (error) {
-      console.error('Error al actualizar:', error);
-      Alert.alert('Error', 'No se pudo actualizar el registro y el resumen mensual');
+      console.error(t('Error al actualizar:'), error);
+      Alert.alert(t('Error'), t('No se pudo actualizar el registro y el resumen mensual'));
     }
   };
   
@@ -131,53 +132,53 @@ const EditarRegistroScreen = ({ route, navigation }) => {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView contentContainerStyle={styles.container}>
-          <Text style={styles.title}>Editar Registro</Text>
+          <Text style={styles.title}>{t("Editar Registro")}</Text>
 
           <View style={styles.field}>
-            <Text style={styles.label}>Tipo de pieza</Text>
+            <Text style={styles.label}>{t("Tipo de pieza")}</Text>
             <TextInput
               value={tipoPieza}
               onChangeText={setTipoPieza}
               style={styles.input}
-              placeholder="Tipo de pieza"
+              placeholder={t("Tipo de pieza")}
             />
           </View>
 
           <View style={styles.field}>
-            <Text style={styles.label}>Cantidad</Text>
+            <Text style={styles.label}>{t("Cantidad")}</Text>
             <TextInput
               value={cantidad}
               onChangeText={setCantidad}
               style={styles.input}
-              placeholder="Cantidad"
+              placeholder={t("Cantidad")}
               keyboardType="numeric"
             />
           </View>
 
           <View style={styles.field}>
-            <Text style={styles.label}>Valor por nudo</Text>
+            <Text style={styles.label}>{t("Valor por nudo")}</Text>
             <TextInput
               value={valorNudo}
               editable={false}
               style={[styles.input, styles.readOnly]}
-              placeholder="Valor por nudo"
+              placeholder={t("Valor por nudo")}
             />
           </View>
 
           <View style={styles.field}>
-            <Text style={styles.label}>Nudos por pieza</Text>
+            <Text style={styles.label}>{t("Nudos por pieza")}</Text>
             <TextInput
               value={nudos}
               editable={false}
               style={[styles.input, styles.readOnly]}
-              placeholder="Nudos por pieza"
+              placeholder={t("Nudos por pieza")}
             />
           </View>
 
           <View style={styles.buttonContainer}>
-            <Button title="Guardar Cambios" onPress={handleGuardar} />
+            <Button title={t("Guardar Cambios")} onPress={handleGuardar} />
             <View style={{ height: 10 }} />
-            <Button title="Cancelar" color="#888" onPress={handleCancelar} />
+            <Button title={t("Cancelar")} color="#888" onPress={handleCancelar} />
           </View>
          
 

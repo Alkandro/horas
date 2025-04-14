@@ -5,6 +5,7 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
+import { useTranslation } from "react-i18next";
 
 import LoginScreen from "./Login/LoginScreen";
 import RegisterScreen from "./Login/RegisterScreen";
@@ -27,72 +28,78 @@ import { auth, firestore } from "./firebaseConfig";
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
-const UserTabNavigator = () => (
-  <Tab.Navigator
-    screenOptions={({ route }) => ({
-      headerShown: true,
-      headerTitleAlign: 'center',
-      tabBarLabelStyle: { fontSize: 13 },
-      tabBarStyle: {
-        position: 'absolute',
-  bottom: 10,
-  left: 16,
-  right: 16,
-  borderRadius: 20,
-  backgroundColor: '#fff',
-  elevation: 4, // sombra Android
-  height: 65,
-      },
-      tabBarIcon: ({ color, size }) => {
-        let iconName;
 
-        if (route.name === "Producción") {
-          iconName = "construct"; // 🛠️ producción
-        } else if (route.name === "Perfil") {
-          iconName = "person-circle"; // 👤 perfil
-        } else if (route.name === "Historial") {
-          iconName = "list"; // 📋 historial
-        } else if (route.name === "Resumen") {
-          iconName = "calendar"; // 📆 resumen mensual
-        }
+const UserTabNavigator = () => {
+  const { t } = useTranslation(); // ✅ Debe estar aquí
 
-        return <Ionicons name={iconName} size={size} color={color} />;
-      },
-    })}
-  >
-    <Tab.Screen name="Producción" component={RegistroYCalculoDiario} />
-    <Tab.Screen name="Historial" component={Historial} />
-    <Tab.Screen name="Resumen" component={ResumenMensual} />
-    <Tab.Screen name="Perfil" component={UserProfileScreen} />
-  </Tab.Navigator>
-);
+  return (
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+        headerShown: true,
+        headerTitleAlign: 'center',
+        tabBarLabelStyle: { fontSize: 13 },
+        tabBarStyle: {
+          position: 'absolute',
+          bottom: 10,
+          left: 16,
+          right: 16,
+          borderRadius: 20,
+          backgroundColor: '#fff',
+          elevation: 4,
+          height: 65,
+        },
+        tabBarIcon: ({ color, size }) => {
+          let iconName;
+          const routeName = route.name;
 
-const AdminStackNavigator = () => (
-  <Stack.Navigator>
-    <Stack.Screen
-      name="AdminTabs"
-      component={AdminTabsNavigator}
-      options={{ headerShown: false }}
-    />
-    <Stack.Screen
-      name="AdminUserDetails"
-      component={AdminUserDetailsScreen}
-      options={{ title: "Detalles del Usuario" }}
-    />
-    <Stack.Screen
-  name="AdminUserMonthlySummary"
-  component={AdminUserMonthlySummaryScreen}
-  options={{ title: 'Resumen Mensual del Usuario' }}
-/>
-<Stack.Screen
-      name="EditarArticulo"
-      component={EditarArticuloScreen}
-      options={{ title: "Editar Artículo" }}
-    />
-  </Stack.Navigator>
-);
+          if (routeName === t("Producción")) iconName = "construct";
+          else if (routeName === t("Perfil")) iconName = "person-circle";
+          else if (routeName === t("Historial")) iconName = "list";
+          else if (routeName === t("Resumen")) iconName = "calendar";
+
+          return <Ionicons name={iconName} size={size} color={color} />;
+        },
+      })}
+    >
+      <Tab.Screen name={t("Producción")} component={RegistroYCalculoDiario} />
+      <Tab.Screen name={t("Historial")} component={Historial} />
+      <Tab.Screen name={t("Resumen")} component={ResumenMensual} />
+      <Tab.Screen name={t("Perfil")} component={UserProfileScreen} />
+    </Tab.Navigator>
+  );
+};
+
+const AdminStackNavigator = () => {
+  const { t } = useTranslation(); // ✅ También aquí
+
+  return (
+    <Stack.Navigator>
+      <Stack.Screen
+        name="AdminTabs"
+        component={AdminTabsNavigator}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="AdminUserDetails"
+        component={AdminUserDetailsScreen}
+        options={{ title: t("Detalles del Usuario") }}
+      />
+      <Stack.Screen
+        name="AdminUserMonthlySummary"
+        component={AdminUserMonthlySummaryScreen}
+        options={{ title: t("Resumen Mensual del Usuario") }}
+      />
+      <Stack.Screen
+        name="EditarArticulo"
+        component={EditarArticuloScreen}
+        options={{ title: t("Editar Artículo") }}
+      />
+    </Stack.Navigator>
+  );
+};
 
 const App = () => {
+  const { t } = useTranslation(); // Hook para traducción
   const [user, setUser] = useState(null);
   const [loadingInitialAuth, setLoadingInitialAuth] = useState(true);
   const [userRole, setUserRole] = useState(null);
@@ -141,12 +148,12 @@ const App = () => {
               <Stack.Screen
                 name="EditarPerfil"
                 component={EditarPerfilScreen}
-                options={{ title: "Editar Perfil" }}
+                options={{ title: t("Editar Perfil") }}
               />
               <Stack.Screen
                 name="EditarRegistro"
                 component={EditarRegistroScreen}
-                options={{ title: "Editar Registro" }}
+                options={{ title: t("Editar Registro") }}
               />
             </>
           )}

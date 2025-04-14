@@ -4,8 +4,10 @@ import DropDownPicker from 'react-native-dropdown-picker';
 import { firestore } from '../firebaseConfig';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import dayjs from 'dayjs';
+import { useTranslation } from "react-i18next";
 
 const AdminUserMonthlySummaryScreen = ({ route }) => {
+  const { t } = useTranslation(); // Hook para traducción
   const { userId } = route.params;
   const currentDate = dayjs();
   const [mesSeleccionado, setMesSeleccionado] = useState(currentDate.month() + 1);
@@ -41,7 +43,7 @@ const AdminUserMonthlySummaryScreen = ({ route }) => {
           setResumenMensual(null);
         }
       } catch (error) {
-        console.error('Error al obtener el resumen mensual:', error);
+        console.error(t('Error al obtener el resumen mensual:'), error);
       }
     };
 
@@ -50,7 +52,7 @@ const AdminUserMonthlySummaryScreen = ({ route }) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Resumen Mensual del Usuario</Text>
+      <Text style={styles.title}>{t("Resumen Mensual del Usuario")}</Text>
 
       <View style={styles.dropdowns}>
         <DropDownPicker
@@ -76,11 +78,11 @@ const AdminUserMonthlySummaryScreen = ({ route }) => {
 
       {resumenMensual ? (
         <View style={styles.resumenContainer}>
-          <Text style={styles.label}>Total del mes:</Text>
+          <Text style={styles.label}>{t("Total del mes")}:</Text>
           <Text style={styles.valor}>¥{Math.round(resumenMensual.total)}</Text>
         </View>
       ) : (
-        <Text style={styles.mensaje}>No hay resumen para este mes.</Text>
+        <Text style={styles.mensaje}>{t("No hay resumen para este mes")}.</Text>
       )}
     </View>
   );

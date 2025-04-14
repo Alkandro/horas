@@ -4,8 +4,10 @@ import { auth, firestore } from '../firebaseConfig';
 import { doc, getDoc } from 'firebase/firestore';
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback } from 'react';
+import { useTranslation } from "react-i18next";
 
 const UserProfileScreen = ({ navigation }) => {
+  const { t } = useTranslation(); // Hook para traducción
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
   const user = auth.currentUser;
@@ -23,7 +25,7 @@ const UserProfileScreen = ({ navigation }) => {
             }
           }
         } catch (error) {
-          console.error('Error al cargar perfil:', error);
+          console.error(t('Error al cargar perfil:'), error);
         } finally {
           setLoading(false);
         }
@@ -37,7 +39,7 @@ const UserProfileScreen = ({ navigation }) => {
     try {
       await auth.signOut();
     } catch (error) {
-      console.error('Error al cerrar sesión:', error);
+      console.error(t('Error al cerrar sesión:'), error);
     }
   };
 
@@ -54,19 +56,19 @@ const UserProfileScreen = ({ navigation }) => {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Perfil del Usuario</Text>
+      <Text style={styles.title}>{t("Perfil del Usuario")}</Text>
 
       {user && userData ? (
        <>
-       <Text style={styles.item}><Text style={styles.label}>Correo:</Text> {user.email}</Text>
-       <Text style={styles.item}><Text style={styles.label}>Nombre:</Text> {userData.nombre}</Text>
-       <Text style={styles.item}><Text style={styles.label}>Apellido:</Text> {userData.apellido}</Text>
-       <Text style={styles.item}><Text style={styles.label}>Teléfono:</Text> {userData.telefono}</Text>
-       <Text style={styles.item}><Text style={styles.label}>Código Postal:</Text> {direccion.codigoPostal || 'No disponible'}</Text>
-       <Text style={styles.item}><Text style={styles.label}>Prefectura:</Text> {direccion.prefectura || 'No disponible'}</Text>
-       <Text style={styles.item}><Text style={styles.label}>Ciudad:</Text> {direccion.ciudad || 'No disponible'}</Text>
-       <Text style={styles.item}><Text style={styles.label}>Barrio:</Text> {direccion.barrio || 'No disponible'}</Text>
-       <Text style={styles.item}><Text style={styles.label}>Número:</Text> {direccion.numero || 'No disponible'}</Text>
+       <Text style={styles.item}><Text style={styles.label}>{t("Correo")}:</Text> {user.email}</Text>
+       <Text style={styles.item}><Text style={styles.label}>{t("Nombre")}:</Text> {userData.nombre}</Text>
+       <Text style={styles.item}><Text style={styles.label}>{t("Apellido")}:</Text> {userData.apellido}</Text>
+       <Text style={styles.item}><Text style={styles.label}>{t("Teléfono")}:</Text> {userData.telefono}</Text>
+       <Text style={styles.item}><Text style={styles.label}>{t("Código Postal")}:</Text> {direccion.codigoPostal || t('No disponible')}</Text>
+       <Text style={styles.item}><Text style={styles.label}>{t("Provincia")}:</Text> {direccion.prefectura || t('No disponible')}</Text>
+       <Text style={styles.item}><Text style={styles.label}>{t("Ciudad")}:</Text> {direccion.ciudad || t('No disponible')}</Text>
+       <Text style={styles.item}><Text style={styles.label}>{t("Barrio")}:</Text> {direccion.barrio || t('No disponible')}</Text>
+       <Text style={styles.item}><Text style={styles.label}>{t("Número")}:</Text> {direccion.numero || t('No disponible')}</Text>
      
        <View style={{ marginTop: 20 }}>
          <Button
@@ -76,11 +78,11 @@ const UserProfileScreen = ({ navigation }) => {
        </View>
      </>
       ) : (
-        <Text>No hay datos de usuario.</Text>
+        <Text>{t("No hay datos de usuario")}</Text>
       )}
 
       <View style={{ marginTop: 20 }}>
-        <Button title="Cerrar Sesión" onPress={handleLogout} />
+        <Button title={t("Cerrar Sesión")} onPress={handleLogout} />
       </View>
     </ScrollView>
   );

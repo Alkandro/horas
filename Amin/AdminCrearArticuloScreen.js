@@ -24,7 +24,7 @@ const AdminCrearArticuloScreen = () => {
 
   const handleCrearArticulo = async () => {
     if (!nombre || !tipo || !valorNudo || !nudos) {
-      Alert.alert('Error', 'Por favor completa todos los campos');
+      Alert.alert(t('Error'), t('Por favor completa todos los campos'));
       return;
     }
   
@@ -32,7 +32,7 @@ const AdminCrearArticuloScreen = () => {
     const nudosNum = parseInt(nudos);
   
     if (isNaN(valorNudoNum) || isNaN(nudosNum)) {
-      Alert.alert('Error', 'Ingresa valores numéricos válidos para el valor del nudo y los nudos.');
+      Alert.alert(t('Error'), t('Ingresa valores numéricos válidos para el valor del nudo y los nudos.'));
       return;
     }
   
@@ -44,14 +44,14 @@ const AdminCrearArticuloScreen = () => {
         nudos: nudosNum,
         creadoEn: new Date().toISOString(),
       });
-      setMensaje('✅ Artículo creado correctamente');
+      setMensaje(t('✅ Artículo creado correctamente'));
       setNombre('');
       setTipo('');
       setValorNudo('');
       setNudos('');
     } catch (error) {
-      console.error('Error al crear artículo:', error);
-      Alert.alert('Error', 'No se pudo crear el artículo');
+      console.error(t('Error al crear artículo:'), error);
+      Alert.alert(t('Error'), t('No se pudo crear el artículo'));
     }
   };
   
@@ -62,7 +62,7 @@ const AdminCrearArticuloScreen = () => {
       style={{ flex: 1 }}
     >
       <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.title}>Crear Artículo</Text>
+        <Text style={styles.title}>{t("Crear Artículo")}</Text>
 
         <TextInput
           placeholder={t("Modelo")}
@@ -71,20 +71,20 @@ const AdminCrearArticuloScreen = () => {
           onChangeText={setNombre}
         />
         <TextInput
-          placeholder="Tipo"
+          placeholder={t("Tipo")}
           style={styles.input}
           value={tipo}
           onChangeText={setTipo}
         />
         <TextInput
-          placeholder="Valor por nudo"
+          placeholder={t("Valor por nudo")}
           style={styles.input}
           value={valorNudo}
           keyboardType="numeric"
           onChangeText={setValorNudo}
         />
         <TextInput
-          placeholder="Cantidad de nudos por pieza"
+          placeholder={t("Cantidad de nudos por pieza")}
           style={styles.input}
           value={nudos}
           keyboardType="numeric"
