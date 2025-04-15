@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "1.23.1",
+    "@react-native-community/blur": "^4.4.1",
     "@react-native-picker/picker": "2.9.0",
     "@react-navigation/bottom-tabs": "^7.3.3",
     "@react-navigation/native": "^7.0.19",
@@ -18,7 +19,7 @@
     "@react-navigation/stack": "^7.2.3",
     "axios": "^1.8.4",
     "dayjs": "^1.11.13",
-    "expo": "^52.0.44",
+    "expo": "~52.0.46",
     "expo-localization": "^16.0.1",
     "expo-status-bar": "~2.0.1",
     "expo-updates": "~0.27.4",

@@ -47,7 +47,7 @@ const UserProfileScreen = ({ navigation }) => {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" />
-        <Text>Cargando perfil...</Text>
+        <Text>{("Cargando perfil...")}</Text>
       </View>
     );
   }
@@ -72,7 +72,7 @@ const UserProfileScreen = ({ navigation }) => {
      
        <View style={{ marginTop: 20 }}>
          <Button
-           title="Editar Perfil"
+           title={t("Editar Perfil")}
            onPress={() => navigation.navigate('EditarPerfil', { userData })}
          />
        </View>

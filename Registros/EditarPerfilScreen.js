@@ -91,7 +91,7 @@ const EditarPerfilScreen = ({ route, navigation }) => {
         style={{ flex: 1 }}
       >
         <ScrollView contentContainerStyle={styles.container}>
-          <Text style={styles.title}>Editar Perfil</Text>
+          <Text style={styles.title}>{t("Editar Perfil")}</Text>
 
           <Text style={styles.label}>{t("Nombre")}</Text>
           <TextInput

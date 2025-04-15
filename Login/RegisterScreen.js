@@ -103,10 +103,10 @@ const RegisterScreen = ({ navigation }) => {
         keyboardVerticalOffset={80}
       >
         <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-          <Text style={styles.title}>Crear Cuenta</Text>
+          <Text style={styles.title}>{t("Crear Cuenta")}</Text>
 
-          <TextInput style={styles.input} placeholder="Nombre" value={nombre} onChangeText={setNombre} />
-          <TextInput style={styles.input} placeholder="Apellido" value={apellido} onChangeText={setApellido} />
+          <TextInput style={styles.input} placeholder={t("Nombre")} value={nombre} onChangeText={setNombre} />
+          <TextInput style={styles.input} placeholder={t("Apellido")} value={apellido} onChangeText={setApellido} />
           <TextInput
             style={styles.input}
             placeholder={t("Teléfono")}

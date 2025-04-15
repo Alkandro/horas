@@ -110,7 +110,7 @@ const LoginScreen = ({ navigation }) => {
       </View>
 
       {/* Mover las banderas aquí, al pie */}
-      <View style={styles.languageRow}>
+      <View style={styles.flagsContainer}>
         {renderFlag("es", require("../assets/flags/flag.png"))}
         {renderFlag("en", require("../assets/flags/united-states.png"))}
         {renderFlag("ja", require("../assets/flags/japan.png"))}
@@ -126,18 +126,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     padding: 20,
     backgroundColor: "#f5f5f5",
-  },
-  languageRow: {
-    flexDirection: "row",
-    justifyContent: "center",
-    paddingVertical: 10,
-    backgroundColor: "#fff",
-    gap: 10,
-  },
-  flag: {
-    width: 32,
-    height: 22,
-    marginHorizontal: 5,
   },
   title: {
     fontSize: 24,
@@ -161,6 +149,21 @@ const styles = StyleSheet.create({
   },
   loading: {
     marginTop: 15,
+  },
+  flagsContainer: {
+    position: "absolute",
+    bottom: 70, // Ajusta la distancia desde la parte inferior
+    left: 0,
+    right: 0,
+    flexDirection: "row",
+    justifyContent: "space-around",
+    alignItems: "center",
+    paddingHorizontal: 30,
+  },
+  flag: {
+    width: 35, // Ajusta el tamaño de las banderas
+    height: 35,
+    borderRadius: 20, // Para hacerlas completamente redondas
   },
 });
 

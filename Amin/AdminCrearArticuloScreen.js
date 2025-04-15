@@ -90,9 +90,9 @@ const AdminCrearArticuloScreen = () => {
           keyboardType="numeric"
           onChangeText={setNudos}
         />
-        <Button title="Crear" onPress={handleCrearArticulo} />
+        <Button title={t("Crear")} onPress={handleCrearArticulo} />
 
-        {mensaje ? <Text style={styles.mensaje}>{mensaje}</Text> : null}
+        {mensaje ? <Text style={styles.mensaje}>{t("mensaje")}</Text> : null}
       </ScrollView>
     </KeyboardAvoidingView>
   );
