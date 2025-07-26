@@ -105,6 +105,7 @@ const LoginScreen = ({ navigation }) => {
           <Button
             title={t("¿No tienes una cuenta? Crear una")}
             onPress={() => navigation.navigate("Register")}
+            
           />
         </View>
       </View>
@@ -165,6 +166,7 @@ const styles = StyleSheet.create({
     height: 35,
     borderRadius: 20, // Para hacerlas completamente redondas
   },
+  
 });
 
 export default LoginScreen;
