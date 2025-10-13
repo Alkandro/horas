@@ -9,8 +9,8 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { doc, updateDoc, getDocs, collection, query, where, setDoc } from 'firebase/firestore';
 import { firestore } from '../firebaseConfig';
 import dayjs from 'dayjs';

@@ -7,10 +7,10 @@ import {
   StyleSheet,
   Alert,
   ActivityIndicator,
-  SafeAreaView,
   TouchableOpacity,
   Image,
 } from "react-native";
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { auth, firestore } from "../firebaseConfig";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";

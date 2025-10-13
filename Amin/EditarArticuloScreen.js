@@ -9,8 +9,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
-  SafeAreaView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { doc, updateDoc } from 'firebase/firestore';
 import { firestore } from '../firebaseConfig';
 import { useTranslation } from "react-i18next";

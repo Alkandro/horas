@@ -6,12 +6,12 @@ import {
   Text,
   StyleSheet,
   ActivityIndicator,
-  SafeAreaView,
   Alert,
   ScrollView,
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import { auth, firestore } from "../firebaseConfig";

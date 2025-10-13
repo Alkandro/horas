@@ -6,9 +6,9 @@ import {
   StyleSheet,
   Alert,
   TouchableOpacity,
-  SafeAreaView,
   RefreshControl,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { collection, getDocs, deleteDoc, doc } from 'firebase/firestore';
 import { firestore } from '../firebaseConfig';
 import Icon from 'react-native-vector-icons/Feather'; // O Ionicons si prefieres

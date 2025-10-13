@@ -8,9 +8,9 @@ import {
   KeyboardAvoidingView,
   ScrollView,
   Platform,
-  SafeAreaView,
   Text,
 } from "react-native";
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { doc, updateDoc } from "firebase/firestore";
 import { firestore, auth } from "../firebaseConfig";
 import axios from "axios";
