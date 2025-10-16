@@ -2,10 +2,8 @@ import React, { useState } from "react";
 import {
   View,
   TextInput,
-  Button,
   Text,
   StyleSheet,
-  Alert,
   ActivityIndicator,
   TouchableOpacity,
   Image,
@@ -17,9 +15,10 @@ import { doc, getDoc, setDoc } from "firebase/firestore";
 import Toast from "react-native-toast-message";
 import { changeLanguage } from "../i18n";
 import { useTranslation } from "react-i18next";
+import { Ionicons } from '@expo/vector-icons'; // Para los iconos
 
 const LoginScreen = ({ navigation }) => {
-  const { t } = useTranslation(); // Hook para traducción
+  const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -70,103 +69,191 @@ const LoginScreen = ({ navigation }) => {
   };
 
   const renderFlag = (lang, icon) => (
-    <TouchableOpacity onPress={() => changeLanguage(lang)}>
+    <TouchableOpacity 
+      onPress={() => changeLanguage(lang)}
+      style={styles.flagButton}
+    >
       <Image source={icon} style={styles.flag} />
     </TouchableOpacity>
   );
 
   return (
-    <SafeAreaView style={{ flex: 1 }}>
+    <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
+        {/* Título principal */}
         <Text style={styles.title}>{t("Iniciar Sesión")}</Text>
-        <TextInput
-          style={styles.input}
-          placeholder={t("Correo Electrónico")}
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-        />
-        <TextInput
-          style={styles.input}
-          placeholder={t("Contraseña")}
-          secureTextEntry
-          value={password}
-          onChangeText={setPassword}
-        />
-        {error ? <Text style={styles.error}>{error}</Text> : null}
-        <Button
-          title={t("Iniciar Sesión")}
-          onPress={handleLogin}
-          disabled={loading}
-        />
-        {loading && <ActivityIndicator style={styles.loading} />}
-        <View style={{ marginTop: 20 }}>
-          <Button
-            title={t("¿No tienes una cuenta? Crear una")}
-            onPress={() => navigation.navigate("Register")}
-            
-          />
-        </View>
-      </View>
 
-      {/* Mover las banderas aquí, al pie */}
-      <View style={styles.flagsContainer}>
-        {renderFlag("es", require("../assets/flags/flag.png"))}
-        {renderFlag("en", require("../assets/flags/united-states.png"))}
-        {renderFlag("ja", require("../assets/flags/japan.png"))}
-        {renderFlag("pt", require("../assets/flags/brazil.png"))}
+        {/* Card del formulario */}
+        <View style={styles.formCard}>
+          {/* Campo de Email con icono */}
+          <View style={styles.inputContainer}>
+            <Ionicons name="mail-outline" size={20} color="#b0b0b0" style={styles.inputIcon} />
+            <TextInput
+              style={styles.input}
+              placeholder={t("Correo Electrónico")}
+              placeholderTextColor="#666666"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+          </View>
+
+          {/* Campo de Contraseña con icono */}
+          <View style={styles.inputContainer}>
+            <Ionicons name="lock-closed-outline" size={20} color="#b0b0b0" style={styles.inputIcon} />
+            <TextInput
+              style={styles.input}
+              placeholder={t("Contraseña")}
+              placeholderTextColor="#666666"
+              secureTextEntry
+              value={password}
+              onChangeText={setPassword}
+            />
+          </View>
+
+          {/* Mensaje de error */}
+          {error ? <Text style={styles.error}>{error}</Text> : null}
+
+          {/* Botón de Login */}
+          <TouchableOpacity
+            style={[styles.loginButton, loading && styles.loginButtonDisabled]}
+            onPress={handleLogin}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="#ffffff" />
+            ) : (
+              <Text style={styles.loginButtonText}>{t("Iniciar Sesión")}</Text>
+            )}
+          </TouchableOpacity>
+
+          {/* Link para crear cuenta */}
+          <TouchableOpacity
+            style={styles.registerLink}
+            onPress={() => navigation.navigate("Register")}
+          >
+            <Text style={styles.registerLinkText}>
+              {t("¿No tienes una cuenta? Crear una")}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Selector de idiomas con banderas */}
+        <View style={styles.flagsContainer}>
+          {renderFlag("es", require("../assets/flags/flag.png"))}
+          {renderFlag("en", require("../assets/flags/united-states.png"))}
+          {renderFlag("ja", require("../assets/flags/japan.png"))}
+          {renderFlag("pt", require("../assets/flags/brazil.png"))}
+        </View>
       </View>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#1a1a1a",
+  },
   container: {
     flex: 1,
     justifyContent: "center",
     padding: 20,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: "#1a1a1a",
   },
   title: {
-    fontSize: 24,
+    fontSize: 32,
     fontWeight: "bold",
-    marginBottom: 20,
+    marginBottom: 40,
     textAlign: "center",
+    color: "#ffffff",
+  },
+  formCard: {
+    backgroundColor: "#2a2a2a",
+    borderRadius: 20,
+    padding: 30,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  inputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#1a1a1a",
+    borderRadius: 12,
+    marginBottom: 16,
+    paddingHorizontal: 15,
+    height: 55,
+    borderWidth: 1,
+    borderColor: "#3a3a3a",
+  },
+  inputIcon: {
+    marginRight: 10,
   },
   input: {
-    height: 40,
-    borderColor: "gray",
-    borderWidth: 1,
-    marginBottom: 15,
-    paddingHorizontal: 10,
-    borderRadius: 5,
-    backgroundColor: "white",
+    flex: 1,
+    fontSize: 16,
+    color: "#ffffff",
   },
   error: {
-    color: "red",
-    marginBottom: 10,
+    color: "#ff4444",
+    marginBottom: 15,
     textAlign: "center",
+    fontSize: 14,
   },
-  loading: {
-    marginTop: 15,
+  loginButton: {
+    backgroundColor: "#0066ff",
+    borderRadius: 12,
+    height: 55,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 10,
+    shadowColor: "#0066ff",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  loginButtonDisabled: {
+    backgroundColor: "#004499",
+  },
+  loginButtonText: {
+    color: "#ffffff",
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  registerLink: {
+    marginTop: 20,
+    alignItems: "center",
+  },
+  registerLinkText: {
+    color: "#b0b0b0",
+    fontSize: 15,
   },
   flagsContainer: {
-    position: "absolute",
-    bottom: 70, // Ajusta la distancia desde la parte inferior
-    left: 0,
-    right: 0,
     flexDirection: "row",
     justifyContent: "space-around",
     alignItems: "center",
+    marginTop: 40,
     paddingHorizontal: 30,
   },
-  flag: {
-    width: 35, // Ajusta el tamaño de las banderas
-    height: 35,
-    borderRadius: 20, // Para hacerlas completamente redondas
+  flagButton: {
+    padding: 5,
   },
-  
+  flag: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+  },
 });
 
 export default LoginScreen;
