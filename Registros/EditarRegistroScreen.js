@@ -3,26 +3,27 @@ import {
   View,
   Text,
   TextInput,
-  Button,
-  Alert,
   StyleSheet,
+  Alert,
   ScrollView,
+  TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { doc, updateDoc, getDocs, collection, query, where, setDoc } from 'firebase/firestore';
+import { doc, updateDoc, getDocs, setDoc, query, collection, where } from 'firebase/firestore';
 import { firestore } from '../firebaseConfig';
 import dayjs from 'dayjs';
-import { useTranslation } from "react-i18next";
+import { useTranslation } from 'react-i18next';
+import { Ionicons } from '@expo/vector-icons';
 
 const EditarRegistroScreen = ({ route, navigation }) => {
   const { registro } = route.params;
-  const { t } = useTranslation(); // Hook para traducción
+  const { t } = useTranslation();
   const [cantidad, setCantidad] = useState(String(registro.cantidad));
   const [tipoPieza, setTipoPieza] = useState(registro.tipoPieza);
-  const [valorNudo] = useState(String(registro.valorNudo)); // solo mostrar
-  const [nudos] = useState(String(registro.nudos));         // solo mostrar
+  const [valorNudo] = useState(String(registro.valorNudo));
+  const [nudos] = useState(String(registro.nudos));
 
   const handleGuardar = async () => {
     try {
@@ -87,46 +88,13 @@ const EditarRegistroScreen = ({ route, navigation }) => {
       Alert.alert(t('Error'), t('No se pudo actualizar el registro y el resumen mensual'));
     }
   };
-  
 
   const handleCancelar = () => {
     navigation.goBack();
   };
 
-  const recalcularResumenMensual = async (userId, fechaISO) => {
-    const fecha = dayjs(fechaISO);
-    const año = fecha.year();
-    const mes = fecha.month() + 1;
-
-    const q = query(
-      collection(firestore, 'production'),
-      where('userId', '==', userId)
-    );
-    const snapshot = await getDocs(q);
-    const datos = snapshot.docs
-      .map(doc => doc.data())
-      .filter(item => {
-        const itemFecha = dayjs(item.fecha);
-        return itemFecha.year() === año && itemFecha.month() + 1 === mes;
-      });
-
-    const total = datos.reduce((acc, item) => {
-      return acc + Number(item.valorNudo) * Number(item.nudos) * Number(item.cantidad);
-    }, 0);
-
-    const resumenId = `${userId}_${año}_${mes}`;
-    const resumenDocRef = doc(firestore, 'resumenMensual', resumenId);
-    await setDoc(resumenDocRef, {
-      userId,
-      año,
-      mes,
-      total,
-      actualizadoEl: new Date()
-    });
-  };
-
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -134,54 +102,90 @@ const EditarRegistroScreen = ({ route, navigation }) => {
         <ScrollView contentContainerStyle={styles.container}>
           <Text style={styles.title}>{t("Editar Registro")}</Text>
 
-          <View style={styles.field}>
-            <Text style={styles.label}>{t("Tipo de pieza")}</Text>
-            <TextInput
-              value={tipoPieza}
-              onChangeText={setTipoPieza}
-              style={styles.input}
-              placeholder={t("Tipo de pieza")}
-            />
+          {/* Card de información */}
+          <View style={styles.card}>
+            {/* Tipo de pieza */}
+            <View style={styles.field}>
+              <Text style={styles.label}>
+                <Ionicons name="cube-outline" size={16} color="#b0b0b0" /> {t("Tipo de pieza")}
+              </Text>
+              <View style={styles.inputContainer}>
+                <Ionicons name="pricetag-outline" size={20} color="#b0b0b0" style={styles.inputIcon} />
+                <TextInput
+                  value={tipoPieza}
+                  onChangeText={setTipoPieza}
+                  style={styles.input}
+                  placeholder={t("Tipo de pieza")}
+                  placeholderTextColor="#666666"
+                />
+              </View>
+            </View>
+
+            {/* Cantidad */}
+            <View style={styles.field}>
+              <Text style={styles.label}>
+                <Ionicons name="calculator-outline" size={16} color="#b0b0b0" /> {t("Cantidad")}
+              </Text>
+              <View style={styles.inputContainer}>
+                <Ionicons name="layers-outline" size={20} color="#b0b0b0" style={styles.inputIcon} />
+                <TextInput
+                  value={cantidad}
+                  onChangeText={setCantidad}
+                  style={styles.input}
+                  placeholder={t("Cantidad")}
+                  placeholderTextColor="#666666"
+                  keyboardType="numeric"
+                />
+              </View>
+            </View>
+
+            {/* Valor por nudo (solo lectura) */}
+            <View style={styles.field}>
+              <Text style={styles.label}>
+                <Ionicons name="cash-outline" size={16} color="#b0b0b0" /> {t("Valor por nudo")}
+              </Text>
+              <View style={[styles.inputContainer, styles.readOnlyContainer]}>
+                <Ionicons name="lock-closed-outline" size={20} color="#666666" style={styles.inputIcon} />
+                <TextInput
+                  value={valorNudo}
+                  editable={false}
+                  style={[styles.input, styles.readOnly]}
+                  placeholder={t("Valor por nudo")}
+                  placeholderTextColor="#666666"
+                />
+              </View>
+            </View>
+
+            {/* Nudos por pieza (solo lectura) */}
+            <View style={styles.field}>
+              <Text style={styles.label}>
+                <Ionicons name="git-network-outline" size={16} color="#b0b0b0" /> {t("Nudos por pieza")}
+              </Text>
+              <View style={[styles.inputContainer, styles.readOnlyContainer]}>
+                <Ionicons name="lock-closed-outline" size={20} color="#666666" style={styles.inputIcon} />
+                <TextInput
+                  value={nudos}
+                  editable={false}
+                  style={[styles.input, styles.readOnly]}
+                  placeholder={t("Nudos por pieza")}
+                  placeholderTextColor="#666666"
+                />
+              </View>
+            </View>
           </View>
 
-          <View style={styles.field}>
-            <Text style={styles.label}>{t("Cantidad")}</Text>
-            <TextInput
-              value={cantidad}
-              onChangeText={setCantidad}
-              style={styles.input}
-              placeholder={t("Cantidad")}
-              keyboardType="numeric"
-            />
-          </View>
-
-          <View style={styles.field}>
-            <Text style={styles.label}>{t("Valor por nudo")}</Text>
-            <TextInput
-              value={valorNudo}
-              editable={false}
-              style={[styles.input, styles.readOnly]}
-              placeholder={t("Valor por nudo")}
-            />
-          </View>
-
-          <View style={styles.field}>
-            <Text style={styles.label}>{t("Nudos por pieza")}</Text>
-            <TextInput
-              value={nudos}
-              editable={false}
-              style={[styles.input, styles.readOnly]}
-              placeholder={t("Nudos por pieza")}
-            />
-          </View>
-
+          {/* Botones */}
           <View style={styles.buttonContainer}>
-            <Button title={t("Guardar Cambios")} onPress={handleGuardar} />
-            <View style={{ height: 10 }} />
-            <Button title={t("Cancelar")} color="#888" onPress={handleCancelar} />
-          </View>
-         
+            <TouchableOpacity style={styles.saveButton} onPress={handleGuardar}>
+              <Ionicons name="checkmark-circle-outline" size={24} color="#1a1a1a" />
+              <Text style={styles.saveButtonText}>{t("Guardar Cambios")}</Text>
+            </TouchableOpacity>
 
+            <TouchableOpacity style={styles.cancelButton} onPress={handleCancelar}>
+              <Ionicons name="close-circle-outline" size={24} color="#b0b0b0" />
+              <Text style={styles.cancelButtonText}>{t("Cancelar")}</Text>
+            </TouchableOpacity>
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -189,38 +193,105 @@ const EditarRegistroScreen = ({ route, navigation }) => {
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#1a1a1a',
+  },
   container: {
     padding: 20,
     flexGrow: 1,
+    backgroundColor: '#1a1a1a',
   },
   title: {
-    fontSize: 22,
+    fontSize: 28,
     fontWeight: 'bold',
-    marginBottom: 20,
+    marginBottom: 25,
     textAlign: 'center',
+    color: '#ffffff',
+  },
+  card: {
+    backgroundColor: '#252525',
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 25,
+    borderWidth: 1,
+    borderColor: '#3a3a3a',
   },
   field: {
-    marginBottom: 16,
+    marginBottom: 20,
   },
   label: {
     fontSize: 16,
     fontWeight: '600',
-    marginBottom: 6,
+    marginBottom: 8,
+    color: '#b0b0b0',
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#2a2a2a',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#3a3a3a',
+    paddingHorizontal: 15,
+    height: 55,
+  },
+  readOnlyContainer: {
+    backgroundColor: '#1f1f1f',
+    borderColor: '#2a2a2a',
+  },
+  inputIcon: {
+    marginRight: 10,
   },
   input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    padding: 10,
-    borderRadius: 5,
+    flex: 1,
     fontSize: 16,
-    backgroundColor: '#f9f9f9',
+    color: '#ffffff',
   },
   readOnly: {
-    backgroundColor: '#eee',
-    color: '#777',
+    color: '#666666',
   },
   buttonContainer: {
-    marginTop: 20,
+    marginTop: 10,
+  },
+  saveButton: {
+    backgroundColor: '#0066ff',
+    borderRadius: 12,
+    height: 55,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 15,
+    shadowColor: '#0066ff',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  saveButtonText: {
+    color: '#1a1a1a',
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginLeft: 8,
+  },
+  cancelButton: {
+    backgroundColor: 'transparent',
+    borderRadius: 12,
+    height: 55,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#3a3a3a',
+  },
+  cancelButtonText: {
+    color: '#b0b0b0',
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginLeft: 8,
   },
 });
 
