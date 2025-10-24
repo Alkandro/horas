@@ -1,92 +1,26 @@
 import React, { useState, useEffect } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { useTranslation } from "react-i18next";
+import Toast from "react-native-toast-message";
 
 import LoginScreen from "./Login/LoginScreen";
 import RegisterScreen from "./Login/RegisterScreen";
-import Historial from "./Registros/Historial";
-import AdminHomeScreen from "./Amin/AdminHomeScreen";
-import AdminUserDetailsScreen from "./Amin/AdminUserDetailsScreen";
-import UserProfileScreen from "./Registros/UserProfileScreen";
-import EditarPerfilScreen from "./Registros/EditarPerfilScreen";
-import RegistroYCalculoDiario from "./Registros/RegistroYCalculoDiario";
 import AdminTabsNavigator from "./Amin/AdminTabsNavigator";
+import UserTabNavigator from "./Registros/UserTabNavigator";
+import EditarPerfilScreen from "./Registros/EditarPerfilScreen";
 import EditarRegistroScreen from "./Registros/EditarRegistroScreen";
-import Toast from "react-native-toast-message";
-import ResumenMensual from "./Registros/ResumenMensual";
+import AdminUserDetailsScreen from "./Amin/AdminUserDetailsScreen";
 import AdminUserMonthlySummaryScreen from "./Amin/AdminUserMonthlySummaryScreen";
 import EditarArticuloScreen from "./Amin/EditarArticuloScreen";
-import { Ionicons } from "@expo/vector-icons";
 
 import { auth, firestore } from "./firebaseConfig";
 
 const Stack = createNativeStackNavigator();
-const Tab = createBottomTabNavigator();
-
-const UserTabNavigator = () => {
-  const { t } = useTranslation();
-
-  return (
-    <Tab.Navigator
-      screenOptions={({ route }) => ({
-        headerShown: false,
-        tabBarLabelStyle: {
-          fontSize: 12,
-          fontWeight: "600",
-          bottom: 2,
-        },
-        tabBarStyle: {
-          position: "absolute",
-          bottom: 0,
-          left: 16,
-          right: 16,
-          borderRadius: 5,
-          backgroundColor: "#2a2a2a",
-          borderTopWidth: 0,
-          elevation: 8,
-          shadowColor: "#000",
-          shadowOffset: {
-            width: 0,
-            height: 4,
-          },
-          shadowOpacity: 0.3,
-          shadowRadius: 8,
-          height: 70,
-          paddingBottom: 10,
-          paddingTop: 5,
-        },
-        tabBarActiveTintColor: "#0066ff",
-        tabBarInactiveTintColor: "#666666",
-        tabBarIcon: ({ color, size, focused }) => {
-          let iconName;
-          const routeName = route.name;
-
-          if (routeName === t("Producción"))
-            iconName = focused ? "construct" : "construct-outline";
-          else if (routeName === t("Perfil"))
-            iconName = focused ? "person-circle" : "person-circle-outline";
-          else if (routeName === t("Historial"))
-            iconName = focused ? "list" : "list-outline";
-          else if (routeName === t("Resumen"))
-            iconName = focused ? "calendar" : "calendar-outline";
-
-          return <Ionicons name={iconName} size={size} color={color} />;
-        },
-      })}
-    >
-      <Tab.Screen name={t("Producción")} component={RegistroYCalculoDiario} />
-      <Tab.Screen name={t("Historial")} component={Historial} />
-      <Tab.Screen name={t("Resumen")} component={ResumenMensual} />
-      <Tab.Screen name={t("Perfil")} component={UserProfileScreen} />
-    </Tab.Navigator>
-  );
-};
 
 const AdminStackNavigator = () => {
   const { t } = useTranslation();
@@ -121,7 +55,7 @@ const AdminStackNavigator = () => {
       <Stack.Screen
         name="EditarArticulo"
         component={EditarArticuloScreen}
-        options={{ title: t("Editar Artículo") }}
+        options={{ title: t("Editar ArtÃ­culo") }}
       />
     </Stack.Navigator>
   );
@@ -145,7 +79,7 @@ const App = () => {
           console.log("Rol detectado:", role);
           setUserRole(role);
         } else {
-          console.log("No se encontró el documento del usuario en Firestore.");
+          console.log("No se encontrÃ³ el documento del usuario en Firestore.");
           setUserRole(null);
         }
       } else {

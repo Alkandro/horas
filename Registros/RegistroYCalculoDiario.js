@@ -9,12 +9,16 @@ import {
   Alert,
   TouchableOpacity,
   Modal,
-  FlatList,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { auth, firestore } from '../firebaseConfig';
-import { collection, getDocs, addDoc, doc, getDoc, setDoc } from 'firebase/firestore';
+import { collection, getDocs, addDoc, doc, getDoc, setDoc, 
+  query, 
+  where, 
+  onSnapshot,
+  updateDoc,
+  serverTimestamp } from 'firebase/firestore';
 import dayjs from 'dayjs';
 import { useTranslation } from "react-i18next";
 import { Ionicons } from '@expo/vector-icons';
@@ -31,6 +35,11 @@ const RegistroYCalculoDiario = () => {
   const [detalles, setDetalles] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
+  
+  // Estados para pedidos
+  const [pedidosPendientes, setPedidosPendientes] = useState([]);
+  const [modalPedidoVisible, setModalPedidoVisible] = useState(false);
+  const [pedidoSeleccionado, setPedidoSeleccionado] = useState(null);
 
   const cargarArticulos = async () => {
     try {
@@ -50,13 +59,36 @@ const RegistroYCalculoDiario = () => {
     }
   };
 
+  // Escuchar pedidos pendientes y en proceso en tiempo real
+  useEffect(() => {
+    const userId = auth.currentUser?.uid;
+    if (!userId) return;
+
+    const q = query(
+      collection(firestore, 'pedidos'),
+      where('userId', '==', userId),
+      where('estado', 'in', ['pendiente', 'en_proceso'])
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const pedidos = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setPedidosPendientes(pedidos);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
   useEffect(() => {
     cargarArticulos();
+    cargarDetalles();
   }, []);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    cargarArticulos().then(() => setRefreshing(false));
+    Promise.all([cargarArticulos(), cargarDetalles()]).then(() => setRefreshing(false));
   }, []);
 
   const handleSeleccionArticulo = (articulo) => {
@@ -66,245 +98,393 @@ const RegistroYCalculoDiario = () => {
     setModalVisible(false);
   };
 
-  const agregarAlTotal = () => {
-    const piezas = parseFloat(cantidadPiezas);
-    if (!tipoPieza || isNaN(piezas) || piezas <= 0) {
-      Alert.alert(t('Aviso'), t('Por favor seleccione un artículo y cantidad válida.'));
+  const cargarDetalles = async () => {
+    try {
+      const userId = auth.currentUser?.uid;
+      if (!userId) return;
+
+      const fecha = dayjs().format('YYYY-MM-DD');
+      const q = query(
+        collection(firestore, 'production'),
+        where('userId', '==', userId),
+        where('fecha', '==', fecha)
+      );
+
+      const snapshot = await getDocs(q);
+      const registros = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      setDetalles(registros);
+
+      const total = registros.reduce((sum, item) => sum + (parseFloat(item.total) || 0), 0);
+      setTotalDiario(total);
+    } catch (error) {
+      console.error('Error al cargar detalles:', error);
+    }
+  };
+
+  // Función para ver detalles del pedido
+  const verDetallesPedido = (pedido) => {
+    setPedidoSeleccionado(pedido);
+    setModalPedidoVisible(true);
+  };
+
+  // Función para usar artículos del pedido
+  const usarArticulosPedido = async (pedido) => {
+    try {
+      const userId = auth.currentUser?.uid;
+      const fecha = dayjs().format('YYYY-MM-DD');
+      
+      Alert.alert(
+        t('Confirmar'),
+        t('¿Desea registrar todos los artículos de este pedido en su producción?'),
+        [
+          { text: t('Cancelar'), style: 'cancel' },
+          {
+            text: t('Confirmar'),
+            onPress: async () => {
+              try {
+                const itemsActualizados = [];
+                
+                // Por cada artículo del pedido
+                for (const item of pedido.items) {
+                  const cantidadPendiente = parseInt(item.cantidadEnviada, 10) - (parseInt(item.cantidadCompletada, 10) || 0);
+                  
+                  if (cantidadPendiente > 0) {
+                    // Guardar en production (historial)
+                    await addDoc(collection(firestore, 'production'), {
+                      userId,
+                      fecha,
+                      articulo: item.nombre,
+                      cantidad: cantidadPendiente,
+                      valorNudo: parseFloat(item.valorNudo),
+                      nudos: parseFloat(item.nudos),
+                      total: parseFloat(item.valorNudo) * parseFloat(item.nudos) * cantidadPendiente,
+                      pedidoId: pedido.id,
+                      timestamp: serverTimestamp(),
+                    });
+                    
+                    // Actualizar cantidadCompletada
+                    itemsActualizados.push({
+                      ...item,
+                      cantidadCompletada: parseInt(item.cantidadEnviada, 10),
+                    });
+                  } else {
+                    itemsActualizados.push(item);
+                  }
+                }
+                
+                // Actualizar pedido en Firestore
+                await updateDoc(doc(firestore, 'pedidos', pedido.id), {
+                  items: itemsActualizados,
+                  estado: 'completado',
+                  fechaCompletado: serverTimestamp(),
+                });
+                
+                Alert.alert(t('Éxito'), t('Artículos del pedido registrados en producción'));
+                setModalPedidoVisible(false);
+                cargarDetalles();
+              } catch (error) {
+                console.error('Error al usar artículos:', error);
+                Alert.alert(t('Error'), t('No se pudieron registrar los artículos'));
+              }
+            }
+          }
+        ]
+      );
+    } catch (error) {
+      console.error('Error:', error);
+    }
+  };
+
+  // Función para marcar pedido como visto
+  const marcarPedidoComoVisto = async (pedidoId) => {
+    try {
+      await updateDoc(doc(firestore, 'pedidos', pedidoId), {
+        estado: 'en_proceso',
+        fechaVisto: serverTimestamp(),
+      });
+    } catch (error) {
+      console.error('Error al marcar como visto:', error);
+    }
+  };
+
+  const guardarRegistro = async () => {
+    if (!tipoPieza) {
+      Alert.alert(t('Error'), t('Por favor seleccione un artículo'));
+      return;
+    }
+    if (!cantidadPiezas || parseInt(cantidadPiezas) <= 0) {
+      Alert.alert(t('Error'), t('Por favor ingrese una cantidad válida'));
       return;
     }
 
-    const subtotal = valorNudo * cantidadNudosPorPieza * piezas;
-    const nuevoDetalle = {
-      tipoPieza,
-      piezas,
-      nudos: cantidadNudosPorPieza,
-      valorNudo: valorNudo,
-      subtotal,
-    };
-
-    setDetalles(prev => [...prev, nuevoDetalle]);
-    setTotalDiario(prev => prev + subtotal);
-    setCantidadPiezas('');
-  };
-
-  const guardarEnFirestore = async () => {
     try {
       const userId = auth.currentUser?.uid;
-      if (!userId || detalles.length === 0) return;
+      const fecha = dayjs().format('YYYY-MM-DD');
+      const cantidad = parseInt(cantidadPiezas);
+      const total = valorNudo * cantidadNudosPorPieza * cantidad;
 
-      const datosIncompletos = detalles.some((detalle) =>
-        !detalle.tipoPieza || detalle.piezas == null || detalle.nudos == null || detalle.valorNudo == null
-      );
-
-      if (datosIncompletos) {
-        Alert.alert(t('Error'), t('Uno o más artículos tienen datos incompletos. Verifica antes de guardar'));
-        return;
-      }
-
-      const now = dayjs();
-      const año = now.year();
-      const mes = now.month() + 1;
-      const resumenId = `${userId}_${año}_${mes}`;
-      const resumenRef = doc(firestore, 'resumenMensual', resumenId);
-      const resumenDoc = await getDoc(resumenRef);
-      const totalPrevio = resumenDoc.exists() ? resumenDoc.data().total : 0;
-
-      for (const detalle of detalles) {
-        await addDoc(collection(firestore, 'production'), {
-          userId,
-          cantidad: detalle.piezas,
-          nudos: detalle.nudos,
-          tipoPieza: detalle.tipoPieza,
-          valorNudo: detalle.valorNudo,
-          fecha: new Date().toISOString(),
-        });
-      }
-
-      await setDoc(resumenRef, {
+      await addDoc(collection(firestore, 'production'), {
         userId,
-        año,
-        mes,
-        total: totalPrevio + totalDiario,
-        creadoEl: new Date(),
+        fecha,
+        articulo: tipoPieza,
+        cantidad,
+        valorNudo,
+        nudos: cantidadNudosPorPieza,
+        total,
+        timestamp: serverTimestamp(),
       });
 
-      await AsyncStorage.setItem('totalPiezas', JSON.stringify(totalDiario));
-      Alert.alert(t('Éxito'), t('Datos guardados correctamente'));
-      setDetalles([]);
-      setTotalDiario(0);
+      Alert.alert(t('Éxito'), t('Registro guardado correctamente'));
+      setCantidadPiezas('');
+      setTipoPieza('');
+      setValorNudo(0);
+      setCantidadNudosPorPieza(0);
+      cargarDetalles();
     } catch (error) {
-      console.error(t('Error al guardar en Firestore:'), error);
-      Alert.alert(t('Error'), t('No se pudo guardar en Firestore'));
+      console.error('Error al guardar:', error);
+      Alert.alert(t('Error'), t('No se pudo guardar el registro'));
     }
+  };
+
+  const calcularTotal = () => {
+    const cantidad = parseInt(cantidadPiezas) || 0;
+    return (valorNudo * cantidadNudosPorPieza * cantidad).toFixed(2);
   };
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <View style={styles.mainContainer}>
-        <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={styles.container}
-          refreshControl={
-            <RefreshControl 
-              refreshing={refreshing} 
-              onRefresh={onRefresh}
-              tintColor="#0066ff"
-            />
-          }
-          keyboardShouldPersistTaps="handled"
-        >
-          {/* Título */}
-          <Text style={styles.title}>{t("Producción")}</Text>
-
-          {/* Card de selección de artículo con borde gradiente */}
-          <View style={styles.gradientBorderContainer}>
-            <LinearGradient
-              colors={['#0066ff', '#00ff88']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.gradientBorder}
-            >
-              <View style={styles.articleCard}>
-                <View style={styles.articleHeader}>
-                  <Ionicons name="cube-outline" size={40} color="#b0b0b0" />
-                  <View style={styles.articleInfo}>
-                    {tipoPieza ? (
-                      <>
-                        <Text style={styles.articleCode}>{tipoPieza}</Text>
-                        <Text style={styles.articleModel}>
-                          {t("Valor")}: ¥{valorNudo} | {t("Nudos")}: {cantidadNudosPorPieza}
-                        </Text>
-                      </>
-                    ) : (
-                      <Text style={styles.articlePlaceholder}>{t("Seleccione un artículo")}</Text>
-                    )}
+      <ScrollView
+        style={styles.container}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      >
+        {/* Card de Pedidos Recibidos */}
+        {pedidosPendientes.length > 0 && (
+          <View style={styles.pedidosCard}>
+            <View style={styles.pedidosHeader}>
+              <Ionicons name="cube" size={24} color="#0066ff" />
+              <Text style={styles.pedidosTitle}>
+                {t('Pedidos Recibidos')} ({pedidosPendientes.length})
+              </Text>
+            </View>
+            
+            {pedidosPendientes.map(pedido => {
+              const totalItems = pedido.items?.length || 0;
+              const fechaEnvio = pedido.fechaEnvio?.toDate ? dayjs(pedido.fechaEnvio.toDate()).format('DD/MM HH:mm') : '';
+              
+              return (
+                <View key={pedido.id} style={styles.pedidoItem}>
+                  <View style={styles.pedidoInfo}>
+                    <Text style={styles.pedidoFecha}>{t('Pedido de')} {fechaEnvio}</Text>
+                    <Text style={styles.pedidoItems}>
+                      {pedido.items?.map(item => `${item.nombre}: ${item.cantidadEnviada} pcs`).join(' | ')}
+                    </Text>
+                  </View>
+                  <View style={styles.pedidoBotones}>
+                    <TouchableOpacity 
+                      style={styles.botonVer}
+                      onPress={() => verDetallesPedido(pedido)}
+                    >
+                      <Ionicons name="eye" size={16} color="#ffffff" />
+                      <Text style={styles.botonTexto}>{t('Ver')}</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                      style={styles.botonUsar}
+                      onPress={() => usarArticulosPedido(pedido)}
+                    >
+                      <Ionicons name="checkmark-circle" size={16} color="#ffffff" />
+                      <Text style={styles.botonTexto}>{t('Usar')}</Text>
+                    </TouchableOpacity>
                   </View>
                 </View>
-
-                {/* Dropdown personalizado */}
-                <TouchableOpacity 
-                  style={styles.dropdownButton}
-                  onPress={() => setModalVisible(true)}
-                >
-                  <Text style={styles.dropdownButtonText}>
-                    {tipoPieza || t("Seleccione un artículo")}
-                  </Text>
-                  <Ionicons name="chevron-down" size={20} color="#b0b0b0" />
-                </TouchableOpacity>
-              </View>
-            </LinearGradient>
+              );
+            })}
           </View>
+        )}
 
-          {/* Input de cantidad con icono */}
-          <View style={styles.inputContainer}>
-            <Ionicons name="calculator-outline" size={20} color="#b0b0b0" style={styles.inputIcon} />
-            <TextInput
-              placeholder={t("Cantidad de piezas")}
-              placeholderTextColor="#666666"
-              keyboardType="numeric"
-              onChangeText={setCantidadPiezas}
-              value={cantidadPiezas}
-              style={styles.input}
-            />
-          </View>
-
-          {/* Botón Agregar */}
-          <TouchableOpacity style={styles.addButton} onPress={agregarAlTotal}>
-            <Ionicons name="add-circle-outline" size={24} color="#ffffff" />
-            <Text style={styles.addButtonText}>{t("Agregar")}</Text>
+        {/* Sección de Producción Diaria */}
+        <View style={styles.produccionCard}>
+          <Text style={styles.seccionTitle}>{t('Producción Diaria')}</Text>
+          
+          <TouchableOpacity 
+            style={styles.selectorArticulo}
+            onPress={() => setModalVisible(true)}
+          >
+            <Text style={tipoPieza ? styles.articuloSeleccionado : styles.articuloPlaceholder}>
+              {tipoPieza || t('Seleccione un artículo')}
+            </Text>
+            <Ionicons name="chevron-down" size={20} color="#666666" />
           </TouchableOpacity>
 
-          {/* Resumen del día */}
-          <View style={styles.summarySection}>
-            <Text style={styles.summaryTitle}>{t("Resumen del día")}:</Text>
-            
-            {detalles.length > 0 ? (
-              <View style={styles.detailsList}>
-                {detalles.map((item, index) => (
-                  <View key={index} style={styles.detailItem}>
-                    <View style={styles.detailHeader}>
-                      <Ionicons name="checkbox-outline" size={20} color="#00ff88" />
-                      <Text style={styles.detailType}>{item.tipoPieza}</Text>
-                    </View>
-                    <View style={styles.detailInfo}>
-                      <Text style={styles.detailText}>
-                        <Ionicons name="cube-outline" size={14} color="#b0b0b0" /> {item.piezas} {t("piezas")}
-                      </Text>
-                      <Text style={styles.detailSubtotal}>¥{item.subtotal.toFixed(0)}</Text>
-                    </View>
-                  </View>
-                ))}
+          <TextInput
+            style={styles.input}
+            placeholder={t('Cantidad de piezas')}
+            placeholderTextColor="#666666"
+            value={cantidadPiezas}
+            onChangeText={setCantidadPiezas}
+            keyboardType="numeric"
+          />
+
+          {tipoPieza && (
+            <View style={styles.detallesCard}>
+              <View style={styles.detalleRow}>
+                <Text style={styles.detalleLabel}>{t('Artículo')}:</Text>
+                <Text style={styles.detalleValor}>{tipoPieza}</Text>
               </View>
-            ) : (
-              <Text style={styles.emptyText}>{t("No hay artículos agregados")}</Text>
-            )}
-          </View>
+              <View style={styles.detalleRow}>
+                <Text style={styles.detalleLabel}>{t('Valor por nudo')}:</Text>
+                <Text style={styles.detalleValor}>¥{valorNudo}</Text>
+              </View>
+              <View style={styles.detalleRow}>
+                <Text style={styles.detalleLabel}>{t('Nudos')}:</Text>
+                <Text style={styles.detalleValor}>{cantidadNudosPorPieza}</Text>
+              </View>
+              <View style={styles.detalleRow}>
+                <Text style={styles.detalleLabel}>{t('Cantidad')}:</Text>
+                <Text style={styles.detalleValor}>{cantidadPiezas || 0} {t('piezas')}</Text>
+              </View>
+              <View style={[styles.detalleRow, styles.totalRow]}>
+                <Text style={styles.totalLabel}>{t('Total')}:</Text>
+                <Text style={styles.totalValor}>¥{calcularTotal()}</Text>
+              </View>
+            </View>
+          )}
 
-          {/* Total diario */}
-          <View style={styles.totalCard}>
-            <Text style={styles.totalLabel}>{t("Total diario")}:</Text>
-            <Text style={styles.totalAmount}>¥{totalDiario.toFixed(0)}</Text>
-          </View>
-
-          {/* Espaciador para que el botón no quede tapado por el tab */}
-          <View style={styles.bottomSpacer} />
-        </ScrollView>
-
-        {/* Botón Guardar y Enviar - Fijo en la parte inferior */}
-        <View style={styles.fixedButtonContainer}>
           <TouchableOpacity 
-            style={[styles.saveButton, detalles.length === 0 && styles.saveButtonDisabled]} 
-            onPress={guardarEnFirestore}
-            disabled={detalles.length === 0}
+            style={styles.botonGuardar}
+            onPress={guardarRegistro}
           >
-            <Ionicons name="checkmark-circle-outline" size={24} color="#1a1a1a" />
-            <Text style={styles.saveButtonText}>{t("Guardar y Enviar")}</Text>
+            <LinearGradient
+              colors={['#0066ff', '#0052cc']}
+              style={styles.gradientButton}
+            >
+              <Ionicons name="save" size={20} color="#ffffff" />
+              <Text style={styles.botonGuardarTexto}>{t('Guardar Registro')}</Text>
+            </LinearGradient>
           </TouchableOpacity>
         </View>
 
-        {/* Modal de selección de artículos */}
+        {/* Registros de Hoy */}
+        <View style={styles.registrosCard}>
+          <Text style={styles.seccionTitle}>{t('Registros de Hoy')}</Text>
+          <View style={styles.totalDiarioCard}>
+            <Text style={styles.totalDiarioLabel}>{t('Total del Día')}:</Text>
+            <Text style={styles.totalDiarioValor}>¥{totalDiario.toFixed(2)}</Text>
+          </View>
+
+          {detalles.map((item, index) => (
+            <View key={item.id || index} style={styles.registroItem}>
+              <View style={styles.registroInfo}>
+                <Text style={styles.registroArticulo}>{item.articulo}</Text>
+                <Text style={styles.registroCantidad}>{item.cantidad} {t('piezas')}</Text>
+              </View>
+              <Text style={styles.registroTotal}>¥{parseFloat(item.total).toFixed(2)}</Text>
+            </View>
+          ))}
+
+          {detalles.length === 0 && (
+            <Text style={styles.sinRegistros}>{t('No hay registros hoy')}</Text>
+          )}
+        </View>
+
+        {/* Modal de Selección de Artículo */}
         <Modal
-          animationType="slide"
-          transparent={true}
           visible={modalVisible}
+          transparent
+          animationType="slide"
           onRequestClose={() => setModalVisible(false)}
         >
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
               <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>{t("Seleccione un artículo")}</Text>
+                <Text style={styles.modalTitle}>{t('Seleccionar Artículo')}</Text>
                 <TouchableOpacity onPress={() => setModalVisible(false)}>
-                  <Ionicons name="close-circle" size={28} color="#b0b0b0" />
+                  <Ionicons name="close" size={24} color="#ffffff" />
                 </TouchableOpacity>
               </View>
               
-              <FlatList
-                data={articulos}
-                keyExtractor={(item) => item.id}
-                renderItem={({ item }) => (
+              <ScrollView style={styles.modalScrollView}>
+                {articulos.map((articulo) => (
                   <TouchableOpacity
+                    key={articulo.id}
                     style={styles.modalItem}
-                    onPress={() => handleSeleccionArticulo(item)}
+                    onPress={() => handleSeleccionArticulo(articulo)}
                   >
                     <View style={styles.modalItemContent}>
-                      <Ionicons name="cube-outline" size={24} color="#0066ff" />
-                      <View style={styles.modalItemInfo}>
-                        <Text style={styles.modalItemName}>{item.nombre}</Text>
-                        <Text style={styles.modalItemDetails}>
-                          {t("Valor")}: ¥{item.valorNudo} | {t("Nudos")}: {item.nudos}
-                        </Text>
-                      </View>
+                      <Ionicons name="cube-outline" size={20} color="#0066ff" />
+                      <Text style={styles.modalItemText}>{articulo.nombre}</Text>
                     </View>
-                    {tipoPieza === item.nombre && (
-                      <Ionicons name="checkmark-circle" size={24} color="#00ff88" />
-                    )}
+                    <Text style={styles.modalItemDetails}>
+                      ¥{articulo.valorNudo} × {articulo.nudos} {t('nudos')}
+                    </Text>
                   </TouchableOpacity>
-                )}
-              />
+                ))}
+              </ScrollView>
             </View>
           </View>
         </Modal>
-      </View>
+
+        {/* Modal de Detalles del Pedido */}
+        <Modal
+          visible={modalPedidoVisible}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setModalPedidoVisible(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>{t('Detalles del Pedido')}</Text>
+                <TouchableOpacity onPress={() => setModalPedidoVisible(false)}>
+                  <Ionicons name="close" size={24} color="#ffffff" />
+                </TouchableOpacity>
+              </View>
+              
+              <ScrollView style={styles.modalScrollView}>
+                {pedidoSeleccionado?.items?.map((item, index) => {
+                  const total = parseFloat(item.valorNudo) * parseFloat(item.nudos) * parseInt(item.cantidadEnviada, 10);
+                  
+                  return (
+                    <View key={index} style={styles.pedidoDetalleItem}>
+                      <Text style={styles.pedidoDetalleNombre}>{item.nombre}</Text>
+                      <View style={styles.pedidoDetalleInfo}>
+                        <Text style={styles.pedidoDetalleTexto}>
+                          {t('Cantidad')}: {item.cantidadEnviada} pcs
+                        </Text>
+                        <Text style={styles.pedidoDetalleTexto}>
+                          {t('Valor por nudo')}: ¥{item.valorNudo}
+                        </Text>
+                        <Text style={styles.pedidoDetalleTexto}>
+                          {t('Nudos')}: {item.nudos}
+                        </Text>
+                        <Text style={styles.pedidoDetalleTotal}>
+                          {t('Total')}: ¥{total.toFixed(2)}
+                        </Text>
+                      </View>
+                    </View>
+                  );
+                })}
+              </ScrollView>
+
+              <TouchableOpacity 
+                style={styles.botonUsarTodos}
+                onPress={() => usarArticulosPedido(pedidoSeleccionado)}
+              >
+                <LinearGradient
+                  colors={['#00cc66', '#00994d']}
+                  style={styles.gradientButton}
+                >
+                  <Ionicons name="checkmark-done" size={20} color="#ffffff" />
+                  <Text style={styles.botonTexto}>{t('Usar Todos los Artículos')}</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -314,223 +494,226 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#1a1a1a',
   },
-  mainContainer: {
-    flex: 1,
-    backgroundColor: '#1a1a1a',
-  },
-  scrollView: {
-    flex: 1,
-  },
   container: {
-    paddingHorizontal: 20,
-    paddingTop: 10,
-    paddingBottom: 20,
+    flex: 1,
+    padding: 16,
   },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#ffffff',
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  gradientBorderContainer: {
-    marginBottom: 20,
-  },
-  gradientBorder: {
-    borderRadius: 16,
-    padding: 2,
-  },
-  articleCard: {
+  // Estilos de Pedidos Recibidos
+  pedidosCard: {
     backgroundColor: '#2a2a2a',
-    borderRadius: 14,
-    padding: 20,
-  },
-  articleHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  articleInfo: {
-    marginLeft: 15,
-    flex: 1,
-  },
-  articleCode: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#ffffff',
-  },
-  articleModel: {
-    fontSize: 14,
-    color: '#b0b0b0',
-    marginTop: 4,
-  },
-  articlePlaceholder: {
-    fontSize: 18,
-    color: '#666666',
-  },
-  dropdownButton: {
-    backgroundColor: '#1a1a1a',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#3a3a3a',
-    paddingHorizontal: 15,
-    paddingVertical: 15,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  dropdownButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#252525',
     borderRadius: 12,
+    padding: 16,
     marginBottom: 16,
-    paddingHorizontal: 15,
-    height: 55,
-    borderWidth: 1,
-    borderColor: '#3a3a3a',
+    borderWidth: 2,
+    borderColor: '#0066ff',
   },
-  inputIcon: {
-    marginRight: 10,
-  },
-  input: {
-    flex: 1,
-    fontSize: 16,
-    color: '#ffffff',
-  },
-  addButton: {
-    backgroundColor: '#0066ff',
-    borderRadius: 12,
-    height: 55,
+  pedidosHeader: {
     flexDirection: 'row',
-    justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 25,
-    shadowColor: '#0066ff',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
+    marginBottom: 12,
   },
-  addButtonText: {
-    color: '#ffffff',
+  pedidosTitle: {
     fontSize: 18,
     fontWeight: 'bold',
+    color: '#ffffff',
     marginLeft: 8,
   },
-  summarySection: {
-    marginBottom: 20,
-  },
-  summaryTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#ffffff',
-    marginBottom: 15,
-  },
-  detailsList: {
-    gap: 10,
-  },
-  detailItem: {
-    backgroundColor: '#252525',
-    borderRadius: 12,
-    padding: 15,
-    borderWidth: 1,
-    borderColor: '#3a3a3a',
-  },
-  detailHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  pedidoItem: {
+    backgroundColor: '#3a3a3a',
+    borderRadius: 8,
+    padding: 12,
     marginBottom: 8,
   },
-  detailType: {
-    fontSize: 16,
+  pedidoInfo: {
+    marginBottom: 8,
+  },
+  pedidoFecha: {
+    fontSize: 14,
+    color: '#b0b0b0',
+    marginBottom: 4,
+  },
+  pedidoItems: {
+    fontSize: 14,
+    color: '#ffffff',
+  },
+  pedidoBotones: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 8,
+  },
+  botonVer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#0066ff',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    gap: 4,
+  },
+  botonUsar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#00cc66',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    gap: 4,
+  },
+  botonTexto: {
+    color: '#ffffff',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  // Estilos de Producción Diaria
+  produccionCard: {
+    backgroundColor: '#2a2a2a',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+  },
+  seccionTitle: {
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#ffffff',
-    marginLeft: 8,
+    marginBottom: 16,
   },
-  detailInfo: {
+  selectorArticulo: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    backgroundColor: '#3a3a3a',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
   },
-  detailText: {
+  articuloPlaceholder: {
+    fontSize: 14,
+    color: '#666666',
+  },
+  articuloSeleccionado: {
+    fontSize: 14,
+    color: '#ffffff',
+    fontWeight: '600',
+  },
+  input: {
+    backgroundColor: '#3a3a3a',
+    borderRadius: 8,
+    padding: 12,
+    color: '#ffffff',
+    fontSize: 14,
+    marginBottom: 12,
+  },
+  detallesCard: {
+    backgroundColor: '#3a3a3a',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+  },
+  detalleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  detalleLabel: {
     fontSize: 14,
     color: '#b0b0b0',
   },
-  detailSubtotal: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#0066ff',
-  },
-  emptyText: {
+  detalleValor: {
     fontSize: 14,
-    color: '#666666',
-    textAlign: 'center',
-    fontStyle: 'italic',
-    paddingVertical: 20,
+    color: '#ffffff',
+    fontWeight: '600',
   },
-  totalCard: {
-    backgroundColor: '#252525',
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: '#3a3a3a',
-    alignItems: 'center',
+  totalRow: {
+    borderTopWidth: 1,
+    borderTopColor: '#4a4a4a',
+    paddingTop: 8,
+    marginTop: 4,
   },
   totalLabel: {
     fontSize: 16,
-    color: '#b0b0b0',
-    marginBottom: 8,
-  },
-  totalAmount: {
-    fontSize: 36,
     fontWeight: 'bold',
     color: '#ffffff',
   },
-  bottomSpacer: {
-    height: 80,
-  },
-  fixedButtonContainer: {
-    position: 'absolute',
-    bottom: 90,
-    left: 20,
-    right: 20,
-    zIndex: 10,
-  },
-  saveButton: {
-    backgroundColor: '#00ff88',
-    borderRadius: 12,
-    height: 55,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#00ff88',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  saveButtonDisabled: {
-    backgroundColor: '#2a4a3a',
-    opacity: 0.5,
-  },
-  saveButtonText: {
-    color: '#1a1a1a',
-    fontSize: 18,
+  totalValor: {
+    fontSize: 16,
     fontWeight: 'bold',
-    marginLeft: 8,
+    color: '#00cc66',
   },
+  botonGuardar: {
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  gradientButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 14,
+    gap: 8,
+  },
+  botonGuardarTexto: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  // Estilos de Registros de Hoy
+  registrosCard: {
+    backgroundColor: '#2a2a2a',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+  },
+  totalDiarioCard: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    backgroundColor: '#3a3a3a',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+  },
+  totalDiarioLabel: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#ffffff',
+  },
+  totalDiarioValor: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#00cc66',
+  },
+  registroItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#3a3a3a',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 8,
+  },
+  registroInfo: {
+    flex: 1,
+  },
+  registroArticulo: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#ffffff',
+    marginBottom: 2,
+  },
+  registroCantidad: {
+    fontSize: 12,
+    color: '#b0b0b0',
+  },
+  registroTotal: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#00cc66',
+  },
+  sinRegistros: {
+    fontSize: 14,
+    color: '#666666',
+    textAlign: 'center',
+    padding: 20,
+  },
+  // Estilos de Modal
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
@@ -556,6 +739,9 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#ffffff',
   },
+  modalScrollView: {
+    maxHeight: 400,
+  },
   modalItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -569,19 +755,47 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flex: 1,
   },
-  modalItemInfo: {
-    marginLeft: 12,
-    flex: 1,
-  },
-  modalItemName: {
+  modalItemText: {
     fontSize: 16,
-    fontWeight: 'bold',
     color: '#ffffff',
-    marginBottom: 4,
+    marginLeft: 12,
+    fontWeight: '600',
   },
   modalItemDetails: {
     fontSize: 13,
     color: '#b0b0b0',
+  },
+  pedidoDetalleItem: {
+    backgroundColor: '#3a3a3a',
+    borderRadius: 8,
+    padding: 12,
+    marginHorizontal: 16,
+    marginBottom: 12,
+  },
+  pedidoDetalleNombre: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#ffffff',
+    marginBottom: 8,
+  },
+  pedidoDetalleInfo: {
+    gap: 4,
+  },
+  pedidoDetalleTexto: {
+    fontSize: 14,
+    color: '#b0b0b0',
+  },
+  pedidoDetalleTotal: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: '#00cc66',
+    marginTop: 4,
+  },
+  botonUsarTodos: {
+    borderRadius: 8,
+    overflow: 'hidden',
+    marginHorizontal: 16,
+    marginTop: 8,
   },
 });
 
