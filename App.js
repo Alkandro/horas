@@ -17,6 +17,7 @@ import EditarRegistroScreen from "./Registros/EditarRegistroScreen";
 import AdminUserDetailsScreen from "./Amin/AdminUserDetailsScreen";
 import AdminUserMonthlySummaryScreen from "./Amin/AdminUserMonthlySummaryScreen";
 import EditarArticuloScreen from "./Amin/EditarArticuloScreen";
+import SplashScreen from "./SplashScreen";
 
 import { auth, firestore } from "./firebaseConfig";
 import { getStorage } from "firebase/storage";
@@ -68,8 +69,11 @@ const App = () => {
   const [user, setUser] = useState(null);
   const [loadingInitialAuth, setLoadingInitialAuth] = useState(true);
   const [userRole, setUserRole] = useState(null);
+  const [showSplash, setShowSplash] = useState(true); // controla splash
 
   useEffect(() => {
+        // Espera mínimo 3.5 segundos antes de ocultar el splash
+        setTimeout(() => setShowSplash(false), 3500);
     const unsubscribe = onAuthStateChanged(auth, async (authUser) => {
       setUser(authUser);
       setLoadingInitialAuth(false);
@@ -89,10 +93,15 @@ const App = () => {
       }
     });
 
-    return unsubscribe;
+    return () => {
+      clearTimeout(splashTimeout);
+      unsubscribe();
+    };
   }, []);
 
-  if (loadingInitialAuth) return null;
+  if (loadingInitialAuth || showSplash) {
+    return <SplashScreen />;
+  }
 
   return (
     <SafeAreaProvider>
@@ -155,3 +164,9 @@ const App = () => {
 };
 
 export default App;
+
+// import SplashTest from "./SplashTest";
+
+// export default function App() {
+//   return <SplashTest />;
+// }
