@@ -7,6 +7,7 @@ import {
   RefreshControl,
   FlatList,
   TouchableOpacity,
+  ScrollView,
 } from "react-native";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -258,6 +259,10 @@ const Historial = ({ navigation }) => {
             dropDownContainerStyle={styles.dropdownContainer}
             arrowIconStyle={styles.dropdownArrow}
             tickIconStyle={styles.dropdownTick}
+            listMode="SCROLLVIEW"
+            scrollViewProps={{
+              nestedScrollEnabled: true,
+            }}
             zIndex={3000}
             zIndexInverse={1000}
           />
@@ -272,9 +277,13 @@ const Historial = ({ navigation }) => {
             containerStyle={styles.dropdownHalf}
             style={styles.dropdown}
             textStyle={styles.dropdownText}
-            dropDownContainerStyle={styles.dropdownContainer}
+            dropDownContainerStyle={styles.dropdownListMeses}
             arrowIconStyle={styles.dropdownArrow}
             tickIconStyle={styles.dropdownTick}
+            listMode="SCROLLVIEW"
+            scrollViewProps={{
+              nestedScrollEnabled: true,
+            }}
             zIndex={2000}
             zIndexInverse={2000}
           />
@@ -400,6 +409,12 @@ const styles = StyleSheet.create({
   dropdownContainer: {
     backgroundColor: '#2a2a2a',
     borderColor: '#3a3a3a',
+    maxHeight: 200,
+  },
+  dropdownListMeses: {
+    backgroundColor: '#2a2a2a',
+    borderColor: '#3a3a3a',
+    maxHeight: 500,
   },
   dropdownArrow: {
     tintColor: '#b0b0b0',

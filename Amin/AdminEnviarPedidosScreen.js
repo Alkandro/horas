@@ -21,9 +21,11 @@ import {
   where,
   serverTimestamp 
 } from 'firebase/firestore';
+import { Keyboard } from 'react-native';
 import { firestore } from '../firebaseConfig';
 import { useTranslation } from 'react-i18next';
 import Toast from 'react-native-toast-message';
+import { useFocusEffect } from '@react-navigation/native';
 
 const AdminEnviarPedidosScreen = ({ navigation }) => {
   const { t } = useTranslation();
@@ -44,9 +46,12 @@ const AdminEnviarPedidosScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [enviando, setEnviando] = useState(false);
 
-  useEffect(() => {
-    cargarDatos();
-  }, []);
+  // Recargar datos cada vez que la pantalla obtiene el foco
+  useFocusEffect(
+    React.useCallback(() => {
+      cargarDatos();
+    }, [])
+  );
 
   const cargarDatos = async () => {
     try {
@@ -90,6 +95,7 @@ const AdminEnviarPedidosScreen = ({ navigation }) => {
   };
 
   const agregarItem = () => {
+    Keyboard.dismiss(); 
     if (!articuloSeleccionado) {
       Toast.show({
         type: 'error',
@@ -114,7 +120,7 @@ const AdminEnviarPedidosScreen = ({ navigation }) => {
       articuloId: articuloSeleccionado,
       nombre: articulo.nombre,
       tipo: articulo.tipo,
-      cantidadEnviada: parseInt(cantidad, 10),  // ← CORREGIDO: era "cantidad"
+      cantidadEnviada: parseInt(cantidad, 10),
       cantidadCompletada: 0,
       piezasDanadas: 0,
       valorNudo: parseFloat(articulo.valorNudo),

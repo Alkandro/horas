@@ -546,7 +546,7 @@ const styles = StyleSheet.create({
   },
   logoutButton: {
     position: 'absolute',
-    bottom: 100,
+    bottom: 10,
     left: 20,
     right: 20,
     backgroundColor: 'transparent',

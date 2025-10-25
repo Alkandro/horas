@@ -28,26 +28,65 @@
 // export { auth, firestore };
 
 // firebaseConfig.js
-import firebase from 'firebase/compat/app';
-import 'firebase/compat/auth';
-import 'firebase/compat/firestore';
+// import firebase from 'firebase/compat/app';
+// import 'firebase/compat/auth';
+// import 'firebase/compat/firestore';
 
-// Configuración de Firebase
+
+// // Configuración de Firebase
+// const firebaseConfig = {
+//   apiKey: 'AIzaSyArdfgl2qO0Er1mamQVi6zUvjBrctU3BO4',
+//   authDomain: 'horas-f784f.firebaseapp.com',
+//   projectId: 'horas-f784f',
+//   storageBucket: 'horas-f784f.firebasestorage.app',
+//   messagingSenderId: '193530406578',
+//   appId: '1:193530406578:web:569abd4c7aefed12c00bab',
+// };
+
+// // Inicializar app si no está ya inicializada
+// if (!firebase.apps.length) {
+//   firebase.initializeApp(firebaseConfig);
+// }
+
+// const auth = firebase.auth();
+// const firestore = firebase.firestore();
+
+// export { firebase, auth, firestore };
+// firebaseConfig.js
+// firebaseConfig.js
+import { initializeApp, getApps, getApp } from "firebase/app";
+import {
+  getAuth,
+  initializeAuth,
+  getReactNativePersistence,
+} from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
+// 🔥 Tu configuración
 const firebaseConfig = {
-  apiKey: 'AIzaSyArdfgl2qO0Er1mamQVi6zUvjBrctU3BO4',
-  authDomain: 'horas-f784f.firebaseapp.com',
-  projectId: 'horas-f784f',
-  storageBucket: 'horas-f784f.firebasestorage.app',
-  messagingSenderId: '193530406578',
-  appId: '1:193530406578:web:569abd4c7aefed12c00bab',
+  apiKey: "AIzaSyArdfgl2qO0Er1mamQVi6zUvjBrctU3BO4",
+  authDomain: "horas-f784f.firebaseapp.com",
+  projectId: "horas-f784f",
+  storageBucket: "horas-f784f.firebasestorage.app",
+  messagingSenderId: "193530406578",
+  appId: "1:193530406578:web:569abd4c7aefed12c00bab",
 };
 
-// Inicializar app si no está ya inicializada
-if (!firebase.apps.length) {
-  firebase.initializeApp(firebaseConfig);
+// ✅ Evita reinicializar la app
+const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+
+// ✅ Evita reinicializar Auth y asegura persistencia
+let auth;
+try {
+  auth = initializeAuth(app, {
+    persistence: getReactNativePersistence(AsyncStorage),
+  });
+} catch (e) {
+  auth = getAuth(app);
 }
 
-const auth = firebase.auth();
-const firestore = firebase.firestore();
+// Firestore
+const firestore = getFirestore(app);
 
-export { firebase, auth, firestore };
+export { auth, firestore };

@@ -19,6 +19,8 @@ import AdminUserMonthlySummaryScreen from "./Amin/AdminUserMonthlySummaryScreen"
 import EditarArticuloScreen from "./Amin/EditarArticuloScreen";
 
 import { auth, firestore } from "./firebaseConfig";
+import { getStorage } from "firebase/storage";
+import { getFunctions } from "firebase/functions";
 
 const Stack = createNativeStackNavigator();
 

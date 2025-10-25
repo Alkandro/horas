@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,8 +7,7 @@ import {
   Alert,
   ScrollView,
   TouchableOpacity,
-  KeyboardAvoidingView,
-  Platform,
+  Keyboard,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { doc, updateDoc } from 'firebase/firestore';
@@ -18,20 +17,34 @@ import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 
 const EditarPerfilScreen = ({ route, navigation }) => {
-  const { userData } = route.params;
   const { t } = useTranslation();
-  const [nombre, setNombre] = useState(userData.nombre || "");
-  const [apellido, setApellido] = useState(userData.apellido || "");
-  const [telefono, setTelefono] = useState(userData.telefono || "");
-  const direccion = userData.direccion || {};
+  const [nombre, setNombre] = useState("");
+  const [apellido, setApellido] = useState("");
+  const [telefono, setTelefono] = useState("");
+  const [prefectura, setPrefectura] = useState("");
+  const [ciudad, setCiudad] = useState("");
+  const [barrio, setBarrio] = useState("");
+  const [numero, setNumero] = useState("");
+  const [codigoPostal, setCodigoPostal] = useState("");
 
-  const [prefectura, setPrefectura] = useState(direccion.prefectura || "");
-  const [ciudad, setCiudad] = useState(direccion.ciudad || "");
-  const [barrio, setBarrio] = useState(direccion.barrio || "");
-  const [numero, setNumero] = useState(direccion.numero || "");
-  const [codigoPostal, setCodigoPostal] = useState(direccion.codigoPostal || "");
+  // Cargar datos solo una vez al montar el componente
+  useEffect(() => {
+    const userData = route.params?.userData;
+    if (userData) {
+      const direccion = userData.direccion || {};
+      setNombre(userData.nombre || "");
+      setApellido(userData.apellido || "");
+      setTelefono(userData.telefono || "");
+      setPrefectura(direccion.prefectura || "");
+      setCiudad(direccion.ciudad || "");
+      setBarrio(direccion.barrio || "");
+      setNumero(direccion.numero || "");
+      setCodigoPostal(direccion.codigoPostal || "");
+    }
+  }, []);
 
   const buscarDireccionPorCodigoPostal = async (codigo) => {
+    Keyboard.dismiss();
     try {
       const response = await axios.get(
         `https://zipcloud.ibsnet.co.jp/api/search?zipcode=${codigo}`
@@ -57,6 +70,7 @@ const EditarPerfilScreen = ({ route, navigation }) => {
   };
 
   const handleGuardar = async () => {
+    Keyboard.dismiss();
     try {
       const user = auth.currentUser;
       const docRef = doc(firestore, "users", user.uid);
@@ -81,139 +95,203 @@ const EditarPerfilScreen = ({ route, navigation }) => {
   };
 
   const handleCancelar = () => {
+    Keyboard.dismiss();
     navigation.goBack();
   };
 
-  const InputField = ({ icon, label, value, onChangeText, placeholder, keyboardType }) => (
-    <View style={styles.field}>
-      <Text style={styles.label}>
-        <Ionicons name={icon} size={16} color="#b0b0b0" /> {label}
-      </Text>
-      <View style={styles.inputContainer}>
-        <Ionicons name={icon} size={20} color="#b0b0b0" style={styles.inputIcon} />
-        <TextInput
-          style={styles.input}
-          value={value}
-          onChangeText={onChangeText}
-          placeholder={placeholder}
-          placeholderTextColor="#666666"
-          keyboardType={keyboardType || 'default'}
-        />
-      </View>
-    </View>
-  );
-
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        style={{ flex: 1 }}
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.container}
+        showsVerticalScrollIndicator={false}
       >
-        <ScrollView contentContainerStyle={styles.container}>
-          <Text style={styles.title}>{t("Editar Perfil")}</Text>
+        <Text style={styles.title}>{t("Editar Perfil")}</Text>
 
-          {/* Información Personal */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>
-              <Ionicons name="person-circle-outline" size={20} color="#b0b0b0" /> {t("Información Personal")}
+        {/* Información Personal */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>
+            <Ionicons name="person-circle-outline" size={20} color="#b0b0b0" /> {t("Información Personal")}
+          </Text>
+
+          <View style={styles.field}>
+            <Text style={styles.label}>
+              <Ionicons name="person-outline" size={16} color="#b0b0b0" /> {t("Nombre")}
             </Text>
-
-            <InputField
-              icon="person-outline"
-              label={t("Nombre")}
-              value={nombre}
-              onChangeText={setNombre}
-              placeholder={t("Nombre")}
-            />
-
-            <InputField
-              icon="person-outline"
-              label={t("Apellido")}
-              value={apellido}
-              onChangeText={setApellido}
-              placeholder={t("Apellido")}
-            />
-
-            <InputField
-              icon="call-outline"
-              label={t("Teléfono")}
-              value={telefono}
-              onChangeText={setTelefono}
-              placeholder={t("Teléfono")}
-              keyboardType="phone-pad"
-            />
+            <View style={styles.inputContainer}>
+              <Ionicons name="person-outline" size={20} color="#b0b0b0" style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                value={nombre}
+                onChangeText={setNombre}
+                placeholder={t("Nombre")}
+                placeholderTextColor="#666666"
+                autoCorrect={false}
+                autoCapitalize="words"
+              />
+            </View>
           </View>
 
-          {/* Dirección */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>
-              <Ionicons name="location-outline" size={20} color="#b0b0b0" /> {t("Dirección")}
+          <View style={styles.field}>
+            <Text style={styles.label}>
+              <Ionicons name="person-outline" size={16} color="#b0b0b0" /> {t("Apellido")}
             </Text>
-
-            <InputField
-              icon="mail-outline"
-              label={t("Código Postal")}
-              value={codigoPostal}
-              onChangeText={setCodigoPostal}
-              placeholder="Ej: 1000001"
-              keyboardType="numeric"
-            />
-
-            <TouchableOpacity
-              style={styles.autocompleteButton}
-              onPress={() => buscarDireccionPorCodigoPostal(codigoPostal)}
-            >
-              <Ionicons name="search-outline" size={20} color="#1a1a1a" />
-              <Text style={styles.autocompleteButtonText}>{t("Autocompletar Dirección")}</Text>
-            </TouchableOpacity>
-
-            <InputField
-              icon="business-outline"
-              label={t("Provincia")}
-              value={prefectura}
-              onChangeText={setPrefectura}
-              placeholder={t("Provincia")}
-            />
-
-            <InputField
-              icon="location-outline"
-              label={t("Ciudad")}
-              value={ciudad}
-              onChangeText={setCiudad}
-              placeholder={t("Ciudad")}
-            />
-
-            <InputField
-              icon="home-outline"
-              label={t("Barrio")}
-              value={barrio}
-              onChangeText={setBarrio}
-              placeholder={t("Barrio")}
-            />
-
-            <InputField
-              icon="keypad-outline"
-              label={t("Número")}
-              value={numero}
-              onChangeText={setNumero}
-              placeholder={t("Número")}
-            />
+            <View style={styles.inputContainer}>
+              <Ionicons name="person-outline" size={20} color="#b0b0b0" style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                value={apellido}
+                onChangeText={setApellido}
+                placeholder={t("Apellido")}
+                placeholderTextColor="#666666"
+                autoCorrect={false}
+                autoCapitalize="words"
+              />
+            </View>
           </View>
 
-          {/* Botones */}
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity style={styles.saveButton} onPress={handleGuardar}>
-              <Ionicons name="checkmark-circle-outline" size={24} color="#1a1a1a" />
-              <Text style={styles.saveButtonText}>{t("Guardar Cambios")}</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.cancelButton} onPress={handleCancelar}>
-              <Ionicons name="close-circle-outline" size={24} color="#b0b0b0" />
-              <Text style={styles.cancelButtonText}>{t("Cancelar")}</Text>
-            </TouchableOpacity>
+          <View style={styles.field}>
+            <Text style={styles.label}>
+              <Ionicons name="call-outline" size={16} color="#b0b0b0" /> {t("Teléfono")}
+            </Text>
+            <View style={styles.inputContainer}>
+              <Ionicons name="call-outline" size={20} color="#b0b0b0" style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                value={telefono}
+                onChangeText={setTelefono}
+                placeholder={t("Teléfono")}
+                placeholderTextColor="#666666"
+                keyboardType="phone-pad"
+              />
+            </View>
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+        </View>
+
+        {/* Dirección */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>
+            <Ionicons name="location-outline" size={20} color="#b0b0b0" /> {t("Dirección")}
+          </Text>
+
+          <View style={styles.field}>
+            <Text style={styles.label}>
+              <Ionicons name="mail-outline" size={16} color="#b0b0b0" /> {t("Código Postal")}
+            </Text>
+            <View style={styles.inputContainer}>
+              <Ionicons name="mail-outline" size={20} color="#b0b0b0" style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                value={codigoPostal}
+                onChangeText={setCodigoPostal}
+                placeholder="Ej: 1000001"
+                placeholderTextColor="#666666"
+                keyboardType="numeric"
+              />
+            </View>
+          </View>
+
+          <TouchableOpacity
+            style={styles.autocompleteButton}
+            onPress={() => buscarDireccionPorCodigoPostal(codigoPostal)}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="search-outline" size={20} color="#1a1a1a" />
+            <Text style={styles.autocompleteButtonText}>{t("Autocompletar Dirección")}</Text>
+          </TouchableOpacity>
+
+          <View style={styles.field}>
+            <Text style={styles.label}>
+              <Ionicons name="business-outline" size={16} color="#b0b0b0" /> {t("Provincia")}
+            </Text>
+            <View style={styles.inputContainer}>
+              <Ionicons name="business-outline" size={20} color="#b0b0b0" style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                value={prefectura}
+                onChangeText={setPrefectura}
+                placeholder={t("Provincia")}
+                placeholderTextColor="#666666"
+                autoCorrect={false}
+                autoCapitalize="words"
+              />
+            </View>
+          </View>
+
+          <View style={styles.field}>
+            <Text style={styles.label}>
+              <Ionicons name="location-outline" size={16} color="#b0b0b0" /> {t("Ciudad")}
+            </Text>
+            <View style={styles.inputContainer}>
+              <Ionicons name="location-outline" size={20} color="#b0b0b0" style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                value={ciudad}
+                onChangeText={setCiudad}
+                placeholder={t("Ciudad")}
+                placeholderTextColor="#666666"
+                autoCorrect={false}
+                autoCapitalize="words"
+              />
+            </View>
+          </View>
+
+          <View style={styles.field}>
+            <Text style={styles.label}>
+              <Ionicons name="home-outline" size={16} color="#b0b0b0" /> {t("Barrio")}
+            </Text>
+            <View style={styles.inputContainer}>
+              <Ionicons name="home-outline" size={20} color="#b0b0b0" style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                value={barrio}
+                onChangeText={setBarrio}
+                placeholder={t("Barrio")}
+                placeholderTextColor="#666666"
+                autoCorrect={false}
+                autoCapitalize="words"
+              />
+            </View>
+          </View>
+
+          <View style={styles.field}>
+            <Text style={styles.label}>
+              <Ionicons name="keypad-outline" size={16} color="#b0b0b0" /> {t("Número")}
+            </Text>
+            <View style={styles.inputContainer}>
+              <Ionicons name="keypad-outline" size={20} color="#b0b0b0" style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                value={numero}
+                onChangeText={setNumero}
+                placeholder={t("Número")}
+                placeholderTextColor="#666666"
+              />
+            </View>
+          </View>
+        </View>
+
+        {/* Botones */}
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity 
+            style={styles.saveButton} 
+            onPress={handleGuardar}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="checkmark-circle-outline" size={24} color="#1a1a1a" />
+            <Text style={styles.saveButtonText}>{t("Guardar Cambios")}</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={styles.cancelButton} 
+            onPress={handleCancelar}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="close-circle-outline" size={24} color="#b0b0b0" />
+            <Text style={styles.cancelButtonText}>{t("Cancelar")}</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -223,9 +301,11 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#1a1a1a',
   },
+  scrollView: {
+    flex: 1,
+  },
   container: {
     padding: 20,
-    flexGrow: 1,
     backgroundColor: "#1a1a1a",
     paddingBottom: 40,
   },
